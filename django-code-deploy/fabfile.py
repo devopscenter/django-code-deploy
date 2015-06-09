@@ -15,6 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import logging
+logger = logging.getLogger(__name__)
+handler = logging.StreamHandler()
+formatter = logging.Formatter(
+        '%(asctime)s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 from fabric.api import env, roles, run, local,put, cd, sudo, settings
 from time import gmtime, strftime
@@ -22,6 +30,64 @@ import os, sys
 from git import Repo
 
 env.user="ubuntu"
+
+
+import boto, urllib2
+from   boto.ec2 import connect_to_region
+
+import aws_settings as AWS_SETTINGS
+
+#objects
+import collections
+AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
+
+#type is web, worker, db
+#environment is dev, staging, prod
+#version is application version like f2
+#region is aws region
+def set_hosts(type,primary=None,version=AWS_SETTINGS.APP_VERSION,region=AWS_SETTINGS.AWS_REGION):
+    environment = os.environ["AWS_ENVIRONMENT"]
+    awsaddresses    = _get_awsaddress(type, primary, environment, version, region)
+    env.hosts = list( item.publicdns for item in awsaddresses )
+    print env.hosts
+
+def dev():
+    os.environ["AWS_ENVIRONMENT"] = "dev"
+
+def staging():
+    os.environ["AWS_ENVIRONMENT"] = "staging"
+
+def prod():
+    os.environ["AWS_ENVIRONMENT"] = "prod"
+
+
+# Private method to get public DNS name for instance with given tag key and value pair
+def _get_awsaddress(type,primary, environment,version,region):
+    awsaddresses = []
+    logger.info("region=%s", region)
+    connection   = _create_connection(region)
+    aws_tags = {"tag:Type" : type, "tag:Environment" : environment, "tag:Version" : version}
+    if primary:
+        aws_tags["tag:Primary"]=primary
+    logger.info("tags=%s", aws_tags)
+    reservations = connection.get_all_instances(filters = aws_tags)
+    for reservation in reservations:
+        for instance in reservation.instances:
+            print "Instance", instance.public_dns_name, instance.private_ip_address
+            awsaddress = AWSAddress(publicdns =str(instance.public_dns_name), privateip=str(instance.private_ip_address))
+            awsaddresses.append(awsaddress)
+    return awsaddresses
+
+# Private method for getting AWS connection
+def _create_connection(region):
+    print "Connecting to ", region
+
+    connection = connect_to_region(
+        region_name = region
+   )
+
+    print "Connection with AWS established"
+    return connection
 
 timest =  strftime("%Y-%m-%d_%H-%M-%S", gmtime())
 UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)
