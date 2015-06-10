@@ -24,7 +24,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-from fabric.api import env, roles, run, local,put, cd, sudo, settings
+from fabric.api import env, roles, run, local,put, cd, sudo, settings, task
 from time import gmtime, strftime
 import os, sys
 from git import Repo
@@ -45,18 +45,22 @@ AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
 #environment is dev, staging, prod
 #version is application version like f2
 #region is aws region
+@task
 def set_hosts(type,primary=None,version=AWS_SETTINGS.APP_VERSION,region=AWS_SETTINGS.AWS_REGION):
     environment = os.environ["AWS_ENVIRONMENT"]
     awsaddresses    = _get_awsaddress(type, primary, environment, version, region)
     env.hosts = list( item.publicdns for item in awsaddresses )
     print env.hosts
 
+@task
 def dev():
     os.environ["AWS_ENVIRONMENT"] = "dev"
 
+@task
 def staging():
     os.environ["AWS_ENVIRONMENT"] = "staging"
 
+@task
 def prod():
     os.environ["AWS_ENVIRONMENT"] = "prod"
 
@@ -93,10 +97,12 @@ timest =  strftime("%Y-%m-%d_%H-%M-%S", gmtime())
 UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)
 TAR_NAME = "devops"
 
+@task
 def tar_from_git(branch):
     local('rm -rf %s.tar.gz' % TAR_NAME)
     local('git archive origin/%s --format=tar.gz --output=%s.tar.gz' % (branch,TAR_NAME))
 
+@task
 def unpack_code():
     cmd = "mkdir -p "+UPLOAD_CODE_PATH
     sudo(cmd)
@@ -105,6 +111,7 @@ def unpack_code():
         sudo('tar zxf %s.tar.gz' % TAR_NAME)
     #sudo('chgrp -R %S %s' % (GROUP_SERVICE,UPLOAD_CODE_PATH))
 
+@task
 def link_new_code():
     try:
         sudo('unlink /data/deploy/current')
@@ -114,11 +121,13 @@ def link_new_code():
     with cd('/data/deploy'):
         sudo('(ls -t|head -n 5;ls)|sort|uniq -u|xargs rm -rf')
 
+@task
 def remote_inflate_code():
     unpack_code()
     link_new_code()
     codeversioner()
 
+@task
 def codeversioner():
     repo = Repo('.')
     headcommit = repo.head.commit
@@ -130,11 +139,12 @@ def codeversioner():
         cmd = 'cp /tmp/versioner.py /data/deploy/current/versioner.py'
         sudo(cmd)
 
+@task
 def deploycode(branch):
     tar_from_git(branch)
     remote_inflate_code()
 
-
+@task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
