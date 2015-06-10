@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
   name = 'django-code-deploy',
-  packages = ['django-code-deploy'], # this must be the same as the name above
+  packages = ['django_code_deploy'], # this must be the same as the name above
   version = '0.3',
   description = 'Deploys Django code',
   author = 'Josh devops.center',
