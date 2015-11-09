@@ -122,6 +122,12 @@ def link_new_code():
         sudo('(ls -t|head -n 5;ls)|sort|uniq -u|xargs rm -rf')
 
 @task
+def pip_install():
+    try:
+        with cd('/data/deploy'):
+            sudo('pip install -r requirements.txt')
+
+@task
 def remote_inflate_code():
     unpack_code()
     link_new_code()
@@ -143,6 +149,7 @@ def codeversioner():
 def deploycode(branch):
     tar_from_git(branch)
     remote_inflate_code()
+    pip_install()
 
 @task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
