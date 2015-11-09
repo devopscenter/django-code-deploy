@@ -123,9 +123,14 @@ def link_new_code():
 
 @task
 def pip_install():
-    try:
-        with cd('/data/deploy'):
-            sudo('pip install -r requirements.txt')
+    with cd('/data/deploy'):
+        sudo('pip install -r requirements.txt')
+
+@task
+#https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
+def django_check():
+    with cd('/data/deploy'):
+        sudo('python manage.py check')
 
 @task
 def remote_inflate_code():
