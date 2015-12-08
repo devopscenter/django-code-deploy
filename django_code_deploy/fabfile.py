@@ -160,3 +160,13 @@ def deploycode(branch):
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
+
+def restart_nginx():
+    run("supervisorctl restart nginx")
+
+def restart_uwsgi():
+    run("supervisorctl restart uwsgi")
+
+def restart_celery():
+    run("supervisorctl restart celery")
+
