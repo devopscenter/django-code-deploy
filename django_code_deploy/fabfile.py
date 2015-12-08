@@ -161,14 +161,21 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
 @task
+def dbmigrate():
+    run("cd /data/deploy/current && python manage.py migrate")
+
+supervisor="/usr/bin/supervisorctl"
+
+@task
 def restart_nginx():
-    sudo("/usr/local/opt/python/bin/supervisorctl restart nginx")
+    sudo("%s restart nginx" % supervisor)
 
 @task
 def restart_uwsgi():
-    sudo("/usr/local/opt/python/bin/supervisorctl restart uwsgi")
+    sudo("mkdir -p /var/run/uwsgi")
+    sudo("%s restart uwsgi" % supervisor)
 
 @task
 def restart_celery():
-    sudo("/usr/local/opt/python/bin/supervisorctl restart celery")
+    sudo("%s restart celery" % supervisor)
 
