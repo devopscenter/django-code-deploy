@@ -123,7 +123,7 @@ def link_new_code():
 
 @task
 def pip_install():
-    with cd('/data/deploy'):
+    with cd('/data/deploy/current'):
         sudo('pip install -r requirements.txt')
 
 @task
