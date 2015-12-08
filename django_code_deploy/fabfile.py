@@ -162,13 +162,13 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
 
 @task
 def restart_nginx():
-    run("supervisorctl restart nginx")
+    sudo("/usr/local/opt/python/bin/supervisorctl restart nginx")
 
 @task
 def restart_uwsgi():
-    run("supervisorctl restart uwsgi")
+    sudo("/usr/local/opt/python/bin/supervisorctl restart uwsgi")
 
 @task
 def restart_celery():
-    run("supervisorctl restart celery")
+    sudo("/usr/local/opt/python/bin/supervisorctl restart celery")
 
