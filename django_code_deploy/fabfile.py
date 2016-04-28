@@ -43,12 +43,12 @@ AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
 
 #type is web, worker, db
 #environment is dev, staging, prod
-#version is application version like f2
+#appname is application name, such as "fresco", "topopps", "mojo", etc.
 #region is aws region
 @task
-def set_hosts(type,primary=None,version=AWS_SETTINGS.APP_VERSION,region=AWS_SETTINGS.AWS_REGION):
+def set_hosts(type,primary=None,appname=AWS_SETTINGS.APP_NAME,region=AWS_SETTINGS.AWS_REGION):
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, version, region)
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, region)
     env.hosts = list( item.publicdns for item in awsaddresses )
     print env.hosts
 
@@ -66,11 +66,11 @@ def prod():
 
 
 # Private method to get public DNS name for instance with given tag key and value pair
-def _get_awsaddress(type,primary, environment,version,region):
+def _get_awsaddress(type,primary, environment,appname,region):
     awsaddresses = []
     logger.info("region=%s", region)
     connection   = _create_connection(region)
-    aws_tags = {"tag:Type" : type, "tag:Environment" : environment, "tag:Version" : version}
+    aws_tags = {"tag:Type" : type, "tag:Environment" : environment, "tag:App" : appname}
     if primary:
         aws_tags["tag:Primary"]=primary
     logger.info("tags=%s", aws_tags)
@@ -127,6 +127,14 @@ def pip_install():
         sudo('pip install -r requirements.txt')
 
 @task
+def collect_static():
+    with cd('/data/deploy/current'):
+        sudo('mkdir static/')
+        sudo('chmod 777 static')
+        sudo('python manage.py collectstatic --noinput')
+
+
+@task
 #https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
 def django_check():
     with cd('/data/deploy'):
@@ -155,6 +163,7 @@ def deploycode(branch):
     tar_from_git(branch)
     remote_inflate_code()
     pip_install()
+    collect_static()
 
 @task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
