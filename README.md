@@ -1,5 +1,5 @@
 # django-code-deploy
-This module deploys django code to AWS instances, making use of [fab](http://docs.fabfile.org).
+This module deploys django code to AWS instances, making use of [fab](http://docs.fabfile.org). This is a simple way to remove infrastructure dependencies (such as number and IP addresses of target instances) from the app repo itself. By no means complete, but may be a helpful step.
 
 ## Setup
 First add aws_settings.py to the root of your project, with these two entries:
@@ -41,7 +41,7 @@ Since this was running as a jenkins job, it assumes that the git repo was update
 * restarted uwsgi
 * restarted nginx
 
-Note that the deploycode operation also does the collectstatic step before returning.
+Note that the deploycode method also performs a collectstatic step before returning.
 ## Complete list of fab methods and arguments
 This is a complete list of the invocable methods, and arguments that may be specified in each one.
 ```python
