@@ -22,9 +22,9 @@ sudo pip install django-code-deploy
 ```
 ## Tag instances
 Finally, you'll need to make sure that your instances have these 3 standard tags, since django-code-deploy works by looking for all instances that match a specified set of tags. These tags are:
-* Type\. the type of instance, such as web, worker, db.
-* Env\. the environment name, such as dev, staging, prod.
-* App\. the application name, such as "fresco", "topopps", "mojo", etc.
+* **Type** - the type of instance, such as web, worker, db.
+* **Env** - the environment name, such as dev, staging, prod.
+* **App** - the application name, such as "fresco", "topopps", "mojo", etc.
 
 ## Usage
 Here's a example set of commands for deploying an app:
