@@ -22,6 +22,7 @@ sudo pip install django-code-deploy
 ```
 ## Tag instances
 Finally, you'll need to make sure that your instances have these 3 standard tags, since django-code-deploy works by looking for all instances that match a specified set of tags. These tags are:
+
 *Type. the type of instance, such as web, worker, db.
 *Env. the environment name, such as dev, staging, prod.
 *App. the application name, such as "fresco", "topopps", "mojo", etc.
@@ -40,6 +41,7 @@ Since this was running as a jenkins job, it assumes that the git repo was update
 * restarted celery
 * restarted uwsgi
 * restarted nginx
+
 Note that the deploycode operation also does the collectstatic step before returning.
 ## Complete list of fab methods and arguments
 This is a complete list of the invocable methods, and arguments that may be specified in each one.
@@ -49,7 +51,7 @@ set_hosts(type,                   #type is web, worker, db
   appname=AWS_SETTINGS.APP_NAME,  #appname is application name, such as "fresco", "topopps", "mojo", etc.
   region=AWS_SETTINGS.AWS_REGION  #region is aws region
 ```
-These next three set AWS_ENVIRONMENT, which is dev, staging, or prod.
+These next three set AWS_ENVIRONMENT (os-level env var) to either dev, staging, or prod.
 ```python
 dev()
 staging()
