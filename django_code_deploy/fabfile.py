@@ -70,7 +70,7 @@ def _get_awsaddress(type,primary, environment,appname,region):
     awsaddresses = []
     logger.info("region=%s", region)
     connection   = _create_connection(region)
-    aws_tags = {"tag:Type" : type, "tag:Environment" : environment, "tag:App" : appname}
+    aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname}
     if primary:
         aws_tags["tag:Primary"]=primary
     logger.info("tags=%s", aws_tags)
