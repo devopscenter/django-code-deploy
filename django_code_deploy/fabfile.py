@@ -57,16 +57,16 @@ def dev():
     os.environ["AWS_ENVIRONMENT"] = "dev"
 
 @task
-def devprod():
-    os.environ["AWS_ENVIRONMENT"] = "devprod"
-
-@task
 def staging():
     os.environ["AWS_ENVIRONMENT"] = "staging"
 
 @task
 def prod():
     os.environ["AWS_ENVIRONMENT"] = "prod"
+
+@task
+def set_environment(environment):
+    os.environ["AWS_ENVIRONMENT"] = environment
 
 
 # Private method to get public DNS name for instance with given tag key and value pair
