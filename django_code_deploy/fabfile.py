@@ -57,6 +57,10 @@ def dev():
     os.environ["AWS_ENVIRONMENT"] = "dev"
 
 @task
+def devprod():
+    os.environ["AWS_ENVIRONMENT"] = "devprod"
+
+@task
 def staging():
     os.environ["AWS_ENVIRONMENT"] = "staging"
 
