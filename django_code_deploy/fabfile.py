@@ -30,7 +30,7 @@ import os, sys
 from git import Repo
 
 env.user="ubuntu"
-
+TRUTH_VALUES = [True, 1, '1', 'true', 't', 'yes', 'y']
 
 import boto, urllib2
 from   boto.ec2 import connect_to_region
@@ -167,7 +167,7 @@ def deploycode(branch,doCollectStatic=True):
     tar_from_git(branch)
     remote_inflate_code()
     pip_install()
-    if doCollectStatic:
+    if doCollectStatic in TRUTH_VALUES:
         collect_static()
 
 @task
