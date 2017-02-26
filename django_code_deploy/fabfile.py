@@ -163,11 +163,12 @@ def codeversioner():
         sudo(cmd)
 
 @task
-def deploycode(branch):
+def deploycode(branch,doCollectStatic=True):
     tar_from_git(branch)
     remote_inflate_code()
     pip_install()
-    collect_static()
+    if doCollectStatic:
+        collect_static()
 
 @task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
