@@ -24,7 +24,7 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-from fabric.api import env, roles, run, local,put, cd, sudo, settings, task
+from fabric.api import env, roles, run, local, put, cd, sudo, settings, task
 from time import gmtime, strftime
 import os, sys
 from git import Repo
@@ -69,9 +69,7 @@ def set_environment(environment):
         os.environ["AWS_ENVIRONMENT"] = environment
 @task
 def show_environment():
-    for key in os.environ.keys():
-        print "%30s %s \n" % (key,os.environ[key])
-
+    run(env)
 
 # Private method to get public DNS name for instance with given tag key and value pair
 def _get_awsaddress(type,primary, environment,appname,region):
