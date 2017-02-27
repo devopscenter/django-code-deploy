@@ -69,7 +69,7 @@ def set_environment(environment):
         os.environ["AWS_ENVIRONMENT"] = environment
 @task
 def show_environment():
-    run(env)
+    run('env')
 
 # Private method to get public DNS name for instance with given tag key and value pair
 def _get_awsaddress(type,primary, environment,appname,region):
