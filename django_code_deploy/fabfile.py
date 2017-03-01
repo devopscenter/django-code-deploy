@@ -66,7 +66,16 @@ def prod():
 
 @task
 def set_environment(environment):
-        os.environ["AWS_ENVIRONMENT"] = environment
+    os.environ["AWS_ENVIRONMENT"] = environment
+
+@task
+def set_access_key(accessKeyPath):
+    env.key_filename = accessKeyPath
+
+@task
+def set_user(loginName):
+    env.user = loginName
+
 @task
 def show_environment():
     run('env')
