@@ -187,7 +187,7 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
 
 @task
 def dbmigrate():
-    run("cd /data/deploy/current && python manage.py migrate")
+    run("cd /data/deploy/current && python manage.py migrate --noinput")
 
 supervisor="/usr/bin/supervisorctl"
 
