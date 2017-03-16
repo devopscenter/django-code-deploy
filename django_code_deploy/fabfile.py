@@ -189,8 +189,13 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
 @task
-def dbmigrate():
-    run("cd /data/deploy/current && python manage.py migrate --noinput")
+def dbmigrate(migrateOptions=None):
+    cmdToRun = "cd /data/deploy/current && python manage.py migrate --noinput"
+
+    if migrateOptions is not None:
+        cmdToRun += " " + migrateOptions
+
+    run(cmdToRun)
 
 supervisor="/usr/bin/supervisorctl"
 
