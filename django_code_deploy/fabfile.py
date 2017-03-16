@@ -146,7 +146,7 @@ def pip_install():
 @task
 def collect_static():
     with cd('/data/deploy/current'):
-        sudo('mkdir static/')
+        sudo('mkdir static/ > /dev/null 2>&1')
         sudo('chmod 777 static')
         sudo('python manage.py collectstatic --noinput')
 
