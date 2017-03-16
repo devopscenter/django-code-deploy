@@ -35,8 +35,6 @@ TRUTH_VALUES = [True, 1, '1', 'true', 't', 'yes', 'y']
 import boto, urllib2
 from   boto.ec2 import connect_to_region
 
-import aws_settings as AWS_SETTINGS
-
 #objects
 import collections
 AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
@@ -46,7 +44,11 @@ AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
 #appname is application name, such as "fresco", "topopps", "mojo", etc.
 #region is aws region
 @task
-def set_hosts(type,primary=None,appname=AWS_SETTINGS.APP_NAME,region=AWS_SETTINGS.AWS_REGION):
+def set_hosts(type,primary=None,appname=None,region=None):
+    if appname is None:
+        local('echo "ERROR: appname option is not set"')
+    if region is None:
+        local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
     awsaddresses    = _get_awsaddress(type, primary, environment, appname, region)
     env.hosts = list( item.publicdns for item in awsaddresses )
