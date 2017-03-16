@@ -2,14 +2,7 @@
 This module deploys django code to AWS instances, making use of [fab](http://docs.fabfile.org). This is a simple way to remove infrastructure dependencies (such as number and IP addresses of target instances) from the app repo itself. By no means complete, but may be a helpful step.
 
 ## Setup
-First add aws_settings.py to the root of your project, with these two entries:
-```python
-AWS_REGION='us-west-2'
-APP_NAME='name-of-your-app'
-```
-note that these values are only defaults, and may be overridden when actually deploying via fab.
-
-Then add this simplified fabfile.py to the root of your project:
+First add this simplified fabfile.py to the root of your project:
 ```python
 from django_code_deploy import fabfile as deploy
 ```
@@ -29,8 +22,8 @@ Finally, you'll need to make sure that your instances have these 3 standard tags
 ## Usage
 Here's a example set of commands for deploying an app:
 ```bash
-fab deploy.dev deploy.set_hosts:type=web,appname=test deploy.deploycode:branch=dev deploy.dbmigrate
-fab deploy.dev deploy.set_hosts:type=web,appname=test deploy.restart_celery deploy.restart_uwsgi deploy.restart_nginx
+fab deploy.dev deploy.set_hosts:type=web,appname=test,region=us-west-2 deploy.deploycode:branch=dev deploy.dbmigrate
+fab deploy.dev deploy.set_hosts:type=web,appname=test,region=us-west-2 deploy.restart_celery deploy.restart_uwsgi deploy.restart_nginx
 ```
 Since this was running as a jenkins job, it assumes that the git repo was updated before it ran. With that in mind, this 
 * set the envronment to 'dev'
@@ -45,17 +38,22 @@ Note that the deploycode method also performs a collectstatic step before return
 ## Complete list of fab methods and arguments
 This is a complete list of the invocable methods, and arguments that may be specified in each one.
 ```python
-set_hosts(type,                   #type is web, worker, db
+set_hosts(type,             #type is web, worker, db
   primary=None,
-  appname=AWS_SETTINGS.APP_NAME,  #appname is application name, such as "fresco", "topopps", "mojo", etc.
-  region=AWS_SETTINGS.AWS_REGION  #region is aws region
+  appname=None,             #appname is application name, such as "fresco", "topopps", "mojo", etc.
+  region=None               #region is aws region
 ```
 These next three set AWS_ENVIRONMENT (os-level env var) to either dev, staging, or prod.
 ```python
 dev()
 staging()
 prod()
+set_environment(anEnv)  For an environment that is not one of dev, staging or prod
 ```
+
+Use the set_access_key() to the location and file that is the private access key to be used to access the instance
+set_access_key('/path/to/theKey')
+
 These are the main methods to use in a deploy.
 ```python
 deploycode(branch)
