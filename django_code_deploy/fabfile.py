@@ -117,6 +117,7 @@ TAR_NAME = "devops"
 @task
 def tar_from_git(branch):
     local('rm -rf %s.tar.gz' % TAR_NAME)
+    local('git checkout %s' % (branch))
     local('git archive %s --format=tar.gz --output=%s.tar.gz' % (branch,TAR_NAME))
 
 @task
@@ -146,7 +147,7 @@ def pip_install():
 @task
 def collect_static():
     with cd('/data/deploy/current'):
-        sudo('mkdir static/ > /dev/null 2>&1')
+        sudo('if [[ ! -d static ]]; then mkdir static/ ;fi')
         sudo('chmod 777 static')
         sudo('python manage.py collectstatic --noinput')
 
