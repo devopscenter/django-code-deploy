@@ -117,7 +117,6 @@ TAR_NAME = "devops"
 @task
 def tar_from_git(branch):
     local('rm -rf %s.tar.gz' % TAR_NAME)
-    local('git checkout %s' % (branch))
     local('git archive %s --format=tar.gz --output=%s.tar.gz' % (branch,TAR_NAME))
 
 @task
