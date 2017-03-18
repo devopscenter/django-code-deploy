@@ -95,7 +95,7 @@ def _get_awsaddress(type,primary, environment,appname,region):
     for reservation in reservations:
         for instance in reservation.instances:
             if instance is not None:
-                instance print "Instance", instance.public_dns_name, instance.private_ip_address
+                print "Instance", instance.public_dns_name, instance.private_ip_address
                 awsaddress = AWSAddress(publicdns =str(instance.public_dns_name), privateip=str(instance.private_ip_address))
                 awsaddresses.append(awsaddress)
     return awsaddresses
