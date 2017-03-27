@@ -98,7 +98,8 @@ def _get_awsaddress(type,primary, environment,appname,region):
             if instance:
                 print "Instance", instance.public_dns_name, instance.private_ip_address
                 awsaddress = AWSAddress(publicdns =str(instance.public_dns_name), privateip=str(instance.private_ip_address))
-                awsaddresses.append(awsaddress)
+                if awsaddress:
+                    awsaddresses.append(awsaddress)
     return awsaddresses
 
 # Private method for getting AWS connection
