@@ -95,11 +95,10 @@ def _get_awsaddress(type,primary, environment,appname,region):
     for reservation in reservations:
         for instance in reservation.instances:
             print "Instance structure: {}".format(instance)
-            if instance:
+            if instance.public_dns_name:                    # make sure there's really an instance here
                 print "Instance", instance.public_dns_name, instance.private_ip_address
                 awsaddress = AWSAddress(publicdns =str(instance.public_dns_name), privateip=str(instance.private_ip_address))
-                if awsaddress:
-                    awsaddresses.append(awsaddress)
+                awsaddresses.append(awsaddress)
     return awsaddresses
 
 # Private method for getting AWS connection
