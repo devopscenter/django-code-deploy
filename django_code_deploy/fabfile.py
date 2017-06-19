@@ -215,4 +215,4 @@ def restart_celery():
 
 @task
 def restart_djangorq():
-    sudo("%s restart djangorq-worker" % supervisor)
+    sudo("%s restart djangorq-worker:*" % supervisor)
