@@ -35,24 +35,42 @@ TRUTH_VALUES = [True, 1, '1', 'true', 't', 'yes', 'y']
 import boto, urllib2
 from   boto.ec2 import connect_to_region
 
+import distutils.sysconfig
+
 #objects
 import collections
 AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
 
-#type is web, worker, db
-#environment is dev, staging, prod
-#appname is application name, such as "fresco", "topopps", "mojo", etc.
-#region is aws region
+
+# set_hosts selects all instances that match the filter criteria.
+#  type is web, worker, db
+#  environment is dev, staging, prod
+#  appname is application name, such as "fresco", "topopps", "mojo", etc.
+#  action is the deferred action needed, such as "deploy", "security-updates", etc.
+#  region is aws region
 @task
-def set_hosts(type,primary=None,appname=None,region=None):
+def set_hosts(type,primary=None,appname=None,action=None,region=None):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, region)
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
     env.hosts = list( item.publicdns for item in awsaddresses )
-    print env.hosts
+    logger.info("hosts: %s", env.hosts)
+
+# set_one_host picks a single instance out of the set.
+#  filters are the same as with set_hosts.
+@task
+def set_one_host(type,primary=None,appname=None,action=None,region=None):
+    if appname is None:
+        local('echo "ERROR: appname option is not set"')
+    if region is None:
+        local('echo "ERROR: region option is not set"')
+    environment = os.environ["AWS_ENVIRONMENT"]
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+    env.hosts = [awsaddresses[0].publicdns]
+    logger.info("hosts: %s", env.hosts)
 
 @task
 def dev():
@@ -83,13 +101,15 @@ def show_environment():
     run('env')
 
 # Private method to get public DNS name for instance with given tag key and value pair
-def _get_awsaddress(type,primary, environment,appname,region):
+def _get_awsaddress(type,primary, environment,appname,action,region):
     awsaddresses = []
     logger.info("region=%s", region)
     connection   = _create_connection(region)
-    aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname}
+    aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname, "instance-state-name" : "running"}
+    if action:
+        aws_tags["tag:ActionNeeded"] = action
     if primary:
-        aws_tags["tag:Primary"]=primary
+        aws_tags["tag:Primary"] = primary
     logger.info("tags=%s", aws_tags)
     reservations = connection.get_all_instances(filters = aws_tags)
     for reservation in reservations:
@@ -184,6 +204,8 @@ def deploycode(branch,doCollectStatic=True):
     pip_install()
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
+    else:
+        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/current/static/')
 
 @task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
