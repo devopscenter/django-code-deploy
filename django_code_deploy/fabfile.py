@@ -238,3 +238,17 @@ def restart_celery():
 @task
 def restart_djangorq():
     sudo("%s restart djangorq-worker:*" % supervisor)
+
+@task
+def run_cmd(cmdToRun):
+    run(cmdToRun)
+
+@task
+def sudo_cmd(cmdToRun):
+    sudo(cmdToRun)
+
+@task
+def run_app(cmdToRun):
+    run('cd /data/deploy/current && ' + cmdToRun)
+
+
