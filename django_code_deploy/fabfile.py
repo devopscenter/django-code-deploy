@@ -167,7 +167,7 @@ def pip_install():
 
 @task
 def download_nltk_data():
-    run_app('if [[ -f nltk.txt ]]; then cat nltk.txt | while read -r line; do python -m ntlk.downloader -d /usr/share/nltk_data ${line}; done; fi')
+    run_app('if [[ -f nltk.txt ]]; then cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
 
 @task
 def collect_static():
