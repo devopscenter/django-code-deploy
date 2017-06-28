@@ -166,6 +166,10 @@ def pip_install():
         sudo('pip install -r requirements.txt')
 
 @task
+def download_nltk_data():
+    run_app('if [[ -f nltk.txt ]]; then cat nltk.txt | while read -r line; do python -m ntlk.downloader -d /usr/share/nltk_data ${line}; done; fi')
+
+@task
 def collect_static():
     with cd('/data/deploy/current'):
         sudo('if [[ ! -d static ]]; then mkdir static/ ;fi')
@@ -250,5 +254,4 @@ def sudo_cmd(cmdToRun):
 @task
 def run_app(cmdToRun):
     run('cd /data/deploy/current && ' + cmdToRun)
-
 
