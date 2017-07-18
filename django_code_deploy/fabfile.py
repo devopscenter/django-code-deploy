@@ -237,7 +237,7 @@ def restart_uwsgi():
 
 @task
 def restart_celery():
-    sudo("%s restart celery" % supervisor)
+    sudo("%s restart celery:*" % supervisor)
 
 @task
 def restart_djangorq():
