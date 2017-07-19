@@ -148,21 +148,21 @@ def unpack_code():
     put('%s.tar.gz' % TAR_NAME, '%s' % UPLOAD_CODE_PATH, use_sudo=True)
     with cd('%s' % UPLOAD_CODE_PATH):
         sudo('tar zxf %s.tar.gz' % TAR_NAME)
-    #sudo('chgrp -R %S %s' % (GROUP_SERVICE,UPLOAD_CODE_PATH))
+
 
 @task
 def link_new_code():
     try:
-        sudo('unlink /data/deploy/current')
+        sudo('unlink /data/deploy/pending')
     except:
         pass
-    sudo('ln -s %s /data/deploy/current' % UPLOAD_CODE_PATH)
+    sudo('ln -s %s /data/deploy/pending' % UPLOAD_CODE_PATH)
     with cd('/data/deploy'):
         sudo('(ls -t|head -n 5;ls)|sort|uniq -u|xargs rm -rf')
 
 @task
 def pip_install():
-    with cd('/data/deploy/current'):
+    with cd('/data/deploy/pending'):
         sudo('pip install -r requirements.txt')
 
 @task
@@ -171,7 +171,7 @@ def download_nltk_data():
 
 @task
 def collect_static():
-    with cd('/data/deploy/current'):
+    with cd('/data/deploy/pending'):
         sudo('if [[ ! -d static ]]; then mkdir static/ ;fi')
         sudo('chmod 777 static')
         sudo('python manage.py collectstatic --noinput')
@@ -180,7 +180,7 @@ def collect_static():
 @task
 #https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
 def django_check():
-    with cd('/data/deploy'):
+    with cd('/data/deploy/pending'):
         sudo('python manage.py check')
 
 @task
@@ -196,9 +196,9 @@ def codeversioner():
     commitid = headcommit.hexsha
     versionhash = commitid
     print versionhash
-    with cd('/data/deploy/current'):
+    with cd('/data/deploy/pending'):
         run("echo 'version=\"%s\"' > /tmp/versioner.py" % versionhash)
-        cmd = 'cp /tmp/versioner.py /data/deploy/current/versioner.py'
+        cmd = 'cp /tmp/versioner.py /data/deploy/pending/versioner.py'
         sudo(cmd)
 
 @task
@@ -209,7 +209,7 @@ def deploycode(branch,doCollectStatic=True):
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
-        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/current/static/')
+        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/pending/static/')
 
 @task
 def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
@@ -217,7 +217,7 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
 
 @task
 def dbmigrate(migrateOptions=None):
-    cmdToRun = "cd /data/deploy/current && python manage.py migrate --noinput"
+    cmdToRun = "cd /data/deploy/pending && python manage.py migrate --noinput"
 
     if migrateOptions is not None:
         cmdToRun += " " + migrateOptions
@@ -226,6 +226,20 @@ def dbmigrate(migrateOptions=None):
 
 supervisor="/usr/bin/supervisorctl"
 
+# 
+@task
+def swap_code():
+    sudo("unlink /data/deploy/current")
+    sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
+
+@task 
+def reload_nginx():
+    sudo("/usr/local/nginx/sbin/nginx -s reload")
+
+@task
+def reload_uwsgi():
+    sudo("/bin/bash -c 'echo c > /tmp/uwsgififo'")
+    
 @task
 def restart_nginx():
     sudo("%s restart nginx" % supervisor)
@@ -253,5 +267,5 @@ def sudo_cmd(cmdToRun):
 
 @task
 def run_app(cmdToRun):
-    run('cd /data/deploy/current && ' + cmdToRun)
+    run('cd /data/deploy/pending && ' + cmdToRun)
 
