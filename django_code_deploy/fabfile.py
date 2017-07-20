@@ -167,7 +167,7 @@ def pip_install():
 
 @task
 def download_nltk_data():
-    run_app('if [[ -f nltk.txt ]]; then cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
+    sudo_app('if [[ -f nltk.txt ]]; then mkdir -p /usr/share/nltk_data/; cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
 
 @task
 def collect_static():
@@ -267,5 +267,9 @@ def sudo_cmd(cmdToRun):
 
 @task
 def run_app(cmdToRun):
-    run('cd /data/deploy/pending && ' + cmdToRun)
+    run('cd /data/deploy/pending ; ' + cmdToRun)
+
+@task
+def sudo_app(cmdToRun):
+    sudo('cd /data/deploy/pending ; ' + cmdToRun)
 
