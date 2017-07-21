@@ -133,7 +133,7 @@ def _create_connection(region):
     return connection
 
 timest =  strftime("%Y-%m-%d_%H-%M-%S", gmtime())
-UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)
+UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)    # deploy directories have timestamps for names.
 TAR_NAME = "devops"
 
 @task
@@ -158,7 +158,16 @@ def link_new_code():
         pass
     sudo('ln -s %s /data/deploy/pending' % UPLOAD_CODE_PATH)
     with cd('/data/deploy'):
-        sudo('(ls -t|head -n 5;ls)|sort|uniq -u|xargs rm -rf')
+# keep onlly 5 most recent deploys, excluding any symlinks or other purely alpha directories. The steps are
+#  1. generate list of directories, sorted by modification time.
+#  2. reemove anything tha tdoes not have a "2" in it, e.g. the millenia (leftmost digit of the 4 digit year)
+#  3. keep the 5 most recent - these become the ones to keep.
+#  4. add a listing of all directories to these top 5.
+#  5. sort the combined listing
+#  6. keep only directory names that are *not* repeated - so this will be all directories beyond those first 5 numeric directories.
+#  7. filter out any alpha directories that were added by the second ls.
+#  8. remove all of the directories that remain.
+        sudo('(ls -t|grep 2|head -n 5;ls)|sort|uniq -u|grep 2|xargs rm -rf')
 
 @task
 def pip_install():
