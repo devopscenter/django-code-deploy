@@ -235,20 +235,20 @@ def dbmigrate(migrateOptions=None):
 
 supervisor="/usr/bin/supervisorctl"
 
-# 
+#
 @task
 def swap_code():
     sudo("unlink /data/deploy/current")
     sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
 
-@task 
+@task
 def reload_nginx():
     sudo("/usr/local/nginx/sbin/nginx -s reload")
 
 @task
 def reload_uwsgi():
     sudo("/bin/bash -c 'echo c > /tmp/uwsgififo'")
-    
+
 @task
 def restart_nginx():
     sudo("%s restart nginx" % supervisor)
@@ -265,6 +265,10 @@ def restart_celery():
 @task
 def restart_djangorq():
     sudo("%s restart djangorq-worker:*" % supervisor)
+
+@task
+def restart_pgpool():
+    sudo("%s restart pgpool" % supervisor)
 
 @task
 def run_cmd(cmdToRun):
