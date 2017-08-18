@@ -238,7 +238,10 @@ supervisor="/usr/bin/supervisorctl"
 #
 @task
 def swap_code():
-    sudo("unlink /data/deploy/current")
+    try:
+        sudo('unlink /data/deploy/current')
+    except:
+        pass
     sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
 
 @task
