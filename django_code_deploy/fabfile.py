@@ -293,7 +293,7 @@ def sudo_app(cmdToRun):
 # uwsgi, djangorq, and and celery can make use of it (e.g. to pass to Sentry for releases)
 
 @task
-def set_git_sha:
+def set_git_sha():
     local('"GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini')
     local('git add .')
 
