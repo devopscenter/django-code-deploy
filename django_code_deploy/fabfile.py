@@ -294,7 +294,7 @@ def sudo_app(cmdToRun):
 
 @task
 def set_git_sha():
-    local('"GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini')
+    local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini', shell="/bin/bash")
     local('git add .')
 
 
