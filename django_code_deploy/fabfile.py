@@ -289,3 +289,12 @@ def run_app(cmdToRun):
 def sudo_app(cmdToRun):
     sudo('cd /data/deploy/pending ; ' + cmdToRun)
 
+# Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
+# uwsgi, djangorq, and and celery can make use of it (e.g. to pass to Sentry for releases)
+
+@task
+def set_git_sha:
+    local('"GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini')
+    local('git add .')
+
+
