@@ -24,13 +24,13 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
-from fabric.api import env, roles, run, local, put, cd, sudo, settings, task
+from fabric.api import *
 from time import gmtime, strftime
 import os, sys
 from git import Repo
 
 env.user="ubuntu"
-TRUTH_VALUES = [True, 1, '1', 'true', 't', 'yes', 'y']
+TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
 
 import boto, urllib2
 from   boto.ec2 import connect_to_region
@@ -39,7 +39,7 @@ import distutils.sysconfig
 
 #objects
 import collections
-AWSAddress = collections.namedtuple('AWSAddress', 'publicdns privateip')
+AWSAddress = collections.namedtuple('AWSAddress', 'name publicdns privateip shard')
 
 
 # set_hosts selects all instances that match the filter criteria.
@@ -56,8 +56,12 @@ def set_hosts(type,primary=None,appname=None,action=None,region=None):
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
     awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
-    env.hosts = list( item.publicdns for item in awsaddresses )
-    logger.info("hosts: %s", env.hosts)
+
+    env.hosts = list( item.publicdns for item in awsaddresses)
+    env.host_names = list (item.name for item in awsaddresses)
+
+    _log_hosts(awsaddresses)
+
 
 # set_one_host picks a single instance out of the set.
 #  filters are the same as with set_hosts.
@@ -69,8 +73,23 @@ def set_one_host(type,primary=None,appname=None,action=None,region=None):
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
     awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+
+    awsaddresses = [awsaddresses[0]]
+
     env.hosts = [awsaddresses[0].publicdns]
-    logger.info("hosts: %s", env.hosts)
+    env.host_names = [awsaddresses[0].name]
+
+    _log_hosts(awsaddresses)
+
+
+def _log_hosts(awsaddresses):
+    logger.info("")
+    logger.info("Instances to operate upon - name, public dns, private ip, shard")
+    logger.info("---------------------------------------------------------------")
+    for instance in awsaddresses:
+        logger.info("%s  %s  %s  %s", instance.name, instance.publicdns, instance.privateip, instance.shard)
+    logger.info("")
+
 
 @task
 def dev():
@@ -103,33 +122,32 @@ def show_environment():
 # Private method to get public DNS name for instance with given tag key and value pair
 def _get_awsaddress(type,primary, environment,appname,action,region):
     awsaddresses = []
-    logger.info("region=%s", region)
     connection   = _create_connection(region)
     aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname, "instance-state-name" : "running"}
     if action:
         aws_tags["tag:ActionNeeded"] = action
     if primary:
         aws_tags["tag:Primary"] = primary
-    logger.info("tags=%s", aws_tags)
-    reservations = connection.get_all_instances(filters = aws_tags)
-    for reservation in reservations:
-        for instance in reservation.instances:
-            print "Instance structure: {}".format(instance)
-            if instance.public_dns_name:                    # make sure there's really an instance here
-                print "Instance", instance.public_dns_name, instance.private_ip_address
-                awsaddress = AWSAddress(publicdns =str(instance.public_dns_name), privateip=str(instance.private_ip_address))
-                awsaddresses.append(awsaddress)
+    logger.info("Filtering via tags=%s", aws_tags)
+    instances = connection.get_only_instances(filters = aws_tags)
+    for instance in instances:
+        if instance.public_dns_name:                                # make sure there's really an instance here
+            shardt = ("None" if not 'Shard' in instance.tags else instance.tags['Shard'])                    
+            awsaddress = AWSAddress( name=instance.tags['Name'], publicdns=instance.public_dns_name, 
+                privateip=instance.private_ip_address, shard=shardt)
+            awsaddresses.append(awsaddress)
     return awsaddresses
 
 # Private method for getting AWS connection
 def _create_connection(region):
-    print "Connecting to ", region
+    logger.info("")
+    logger.info("Connecting to AWS region %s", region)
 
     connection = connect_to_region(
         region_name = region
    )
 
-    print "Connection with AWS established"
+    logger.info("Connection with AWS established")
     return connection
 
 timest =  strftime("%Y-%m-%d_%H-%M-%S", gmtime())
@@ -176,6 +194,7 @@ def pip_install():
 
 @task
 def download_nltk_data():
+    run("echo 'loading NLTK data specified in nltk.txt'")
     sudo_app('if [[ -f nltk.txt ]]; then mkdir -p /usr/share/nltk_data/; cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
 
 @task
@@ -211,10 +230,27 @@ def codeversioner():
         sudo(cmd)
 
 @task
-def deploycode(branch,doCollectStatic=True):
+def deploycode(branch,nltkLoad="False",doCollectStatic="True"):
     tar_from_git(branch)
     remote_inflate_code()
     pip_install()
+ 
+    if nltkLoad in TRUTH_VALUES:
+        download_nltk_data()
+
+    if doCollectStatic in TRUTH_VALUES:
+        collect_static()
+    else:
+        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+
+@task
+@parallel
+def deployParallel(nltkLoad="False",doCollectStatic="True"):
+    remote_inflate_code()
+    pip_install()
+    if nltkLoad in TRUTH_VALUES:
+        download_nltk_data()
+
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
@@ -236,6 +272,35 @@ def dbmigrate(migrateOptions=None):
 supervisor="/usr/bin/supervisorctl"
 
 #
+# These atomic tasks for putting the new deploy into effect are preferred, as they
+# may run in parallel, while minimizing the exposure between the swap_code and putting the new code into effect
+#
+@task
+@parallel
+def reload_web():
+    swap_code()
+    reload_nginx()
+    reload_uwsgi()
+
+@task
+@parallel
+def restart_web():
+    swap_code()
+    restart_nginx()
+    restart_uwsgi()
+
+@task
+@parallel
+def restart_worker(async="djangorq"):
+    swap_code()
+    if async == "djangorq":
+        restart_djangorq()
+    elif async == "celery":
+        restart_celery
+    else:
+        logger.info("Specified async facility not supported")
+
+
 @task
 def swap_code():
     try:
