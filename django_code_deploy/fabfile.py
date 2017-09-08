@@ -58,7 +58,7 @@ def set_hosts(type,primary=None,appname=None,action=None,region=None):
     awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
 
     env.hosts = list( item.publicdns for item in awsaddresses)
-    env.host_names = list (item.name for item in awsaddresses)
+    env.host_names = list(item.name for item in awsaddresses)
 
     _log_hosts(awsaddresses)
 
@@ -80,6 +80,27 @@ def set_one_host(type,primary=None,appname=None,action=None,region=None):
     env.host_names = [awsaddresses[0].name]
 
     _log_hosts(awsaddresses)
+
+
+@task
+def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None):
+    if appname is None:
+        local('echo "ERROR: appname option is not set"')
+    if region is None:
+        local('echo "ERROR: region option is not set"')
+    environment = os.environ["AWS_ENVIRONMENT"]
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+
+    pruned_list = []
+    for ahost in awsaddresses:
+        if not next((True for bhost in pruned_list if ahost.shard == bhost.shard), False):
+            pruned_list.append(ahost)
+
+    env.hosts = list( item.publicdns for item in pruned_list)
+    env.host_names = list(item.name for item in pruned_list)
+
+    _log_hosts(pruned_list)
+
 
 
 def _log_hosts(awsaddresses):
@@ -261,6 +282,7 @@ def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
 @task
+@parallel
 def dbmigrate(migrateOptions=None):
     cmdToRun = "cd /data/deploy/pending && python manage.py migrate --noinput"
 
@@ -348,11 +370,13 @@ def sudo_cmd(cmdToRun):
 
 @task
 def run_app(cmdToRun):
-    run('cd /data/deploy/pending ; ' + cmdToRun)
+    with cd('/data/deploy/pending'):
+        run(cmdToRun)
 
 @task
 def sudo_app(cmdToRun):
-    sudo('cd /data/deploy/pending ; ' + cmdToRun)
+    with cd('/data/deploy/pending'):
+        sudo(cmdToRun)
 
 # Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
 # uwsgi, djangorq, and and celery can make use of it (e.g. to pass to Sentry for releases)
