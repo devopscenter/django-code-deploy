@@ -29,6 +29,11 @@ from time import gmtime, strftime
 import os, sys
 from git import Repo
 
+
+class FabricException(Exception):
+    pass
+
+
 env.user="ubuntu"
 TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
 
@@ -369,14 +374,24 @@ def sudo_cmd(cmdToRun):
     sudo(cmdToRun)
 
 @task
-def run_app(cmdToRun):
-    with cd('/data/deploy/pending'):
-        run(cmdToRun)
+def run_app(cmdToRun, stopOnError="True"):
+    if stopOnError in TRUTH_VALUES:
+        with cd('/data/deploy/pending'):
+            run(cmdToRun)
+    else:
+        with settings(abort_exception = FabricException):
+            try:
+                with cd('/data/deploy/pending'):
+                    run(cmdToRun)
+            except FabricException:
+                pass
 
 @task
 def sudo_app(cmdToRun):
     with cd('/data/deploy/pending'):
         sudo(cmdToRun)
+
+
 
 # Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
 # uwsgi, djangorq, and and celery can make use of it (e.g. to pass to Sentry for releases)
