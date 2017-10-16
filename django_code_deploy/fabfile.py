@@ -318,6 +318,16 @@ def restart_web():
 
 @task
 @parallel
+def reload_worker(async="djangorq"):
+    swap_code()
+    if async == "djangorq":
+        reload_djangorq()
+    elif async == "celery":
+        restart_celery
+    else:
+        logger.info("Specified async facility not supported")
+@task
+@parallel
 def restart_worker(async="djangorq"):
     swap_code()
     if async == "djangorq":
@@ -343,6 +353,10 @@ def reload_nginx():
 @task
 def reload_uwsgi():
     sudo("/bin/bash -c 'echo c > /tmp/uwsgififo'")
+
+@task 
+def reload_djangorq():
+    sudo("for process in $(ps -ef|grep rq|grep -v grep|awk '{print $2}'); do kill -INT ${process}; done")
 
 @task
 def restart_nginx():
