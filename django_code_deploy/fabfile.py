@@ -54,13 +54,13 @@ AWSAddress = collections.namedtuple('AWSAddress', 'name publicdns privateip shar
 #  action is the deferred action needed, such as "deploy", "security-updates", etc.
 #  region is aws region
 @task
-def set_hosts(type,primary=None,appname=None,action=None,region=None):
+def set_hosts(type,primary=None,appname=None,action=None,region=None,shard=all):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
 
     env.hosts = list( item.publicdns for item in awsaddresses)
     env.host_names = list(item.name for item in awsaddresses)
@@ -71,13 +71,13 @@ def set_hosts(type,primary=None,appname=None,action=None,region=None):
 # set_one_host picks a single instance out of the set.
 #  filters are the same as with set_hosts.
 @task
-def set_one_host(type,primary=None,appname=None,action=None,region=None):
+def set_one_host(type,primary=None,appname=None,action=None,region=None,shard=all):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
 
     awsaddresses = [awsaddresses[0]]
 
@@ -88,13 +88,13 @@ def set_one_host(type,primary=None,appname=None,action=None,region=None):
 
 
 @task
-def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None):
+def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None,shard=all):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region)
+    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
 
     pruned_list = []
     for ahost in awsaddresses:
@@ -146,7 +146,7 @@ def show_environment():
     run('env')
 
 # Private method to get public DNS name for instance with given tag key and value pair
-def _get_awsaddress(type,primary, environment,appname,action,region):
+def _get_awsaddress(type,primary, environment,appname,action,region, shard):
     awsaddresses = []
     connection   = _create_connection(region)
     aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname, "instance-state-name" : "running"}
@@ -156,12 +156,14 @@ def _get_awsaddress(type,primary, environment,appname,action,region):
         aws_tags["tag:Primary"] = primary
     logger.info("Filtering via tags=%s", aws_tags)
     instances = connection.get_only_instances(filters = aws_tags)
+    shards = [ e for e in shard.split(' ') ]
     for instance in instances:
         if instance.public_dns_name:                                # make sure there's really an instance here
             shardt = ("None" if not 'Shard' in instance.tags else instance.tags['Shard'])                    
             awsaddress = AWSAddress( name=instance.tags['Name'], publicdns=instance.public_dns_name, 
                 privateip=instance.private_ip_address, shard=shardt)
-            awsaddresses.append(awsaddress)
+            if (shard == 'all') or (shardt in shards):
+                awsaddresses.append(awsaddress)
     return awsaddresses
 
 # Private method for getting AWS connection
