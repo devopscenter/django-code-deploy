@@ -54,7 +54,7 @@ AWSAddress = collections.namedtuple('AWSAddress', 'name publicdns privateip shar
 #  action is the deferred action needed, such as "deploy", "security-updates", etc.
 #  region is aws region
 @task
-def set_hosts(type,primary=None,appname=None,action=None,region=None,shard=all):
+def set_hosts(type,primary=None,appname=None,action=None,region=None,shard='all'):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
@@ -71,7 +71,7 @@ def set_hosts(type,primary=None,appname=None,action=None,region=None,shard=all):
 # set_one_host picks a single instance out of the set.
 #  filters are the same as with set_hosts.
 @task
-def set_one_host(type,primary=None,appname=None,action=None,region=None,shard=all):
+def set_one_host(type,primary=None,appname=None,action=None,region=None,shard='all'):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
@@ -88,7 +88,7 @@ def set_one_host(type,primary=None,appname=None,action=None,region=None,shard=al
 
 
 @task
-def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None,shard=all):
+def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None,shard='all'):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
