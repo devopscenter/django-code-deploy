@@ -35,6 +35,7 @@ class FabricException(Exception):
 
 
 env.user="ubuntu"
+env.key_filename=[]
 TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
 
 import boto, urllib2
@@ -115,6 +116,9 @@ def _log_hosts(awsaddresses):
     for instance in awsaddresses:
         logger.info("%s  %s  %s  %s", instance.name, instance.publicdns, instance.privateip, instance.shard)
     logger.info("")
+    logger.info("")
+    logger.info("keys: %s", env.key_filename)
+    logger.info("")
 
 
 @task
@@ -135,7 +139,7 @@ def set_environment(environment):
 
 @task
 def set_access_key(accessKeyPath):
-    env.key_filename = accessKeyPath
+    env.key_filename = [accessKeyPath]
 
 @task
 def set_user(loginName):
@@ -164,6 +168,10 @@ def _get_awsaddress(type,primary, environment,appname,action,region, shard):
                 privateip=instance.private_ip_address, shard=shardt)
             if (shard == 'all') or (shardt in shards):
                 awsaddresses.append(awsaddress)
+                if instance.key_name not in env.key_filename:
+                    env.key_filename.append(instance.key_name)
+    # convert any AWS key-pair names to a file path for the actual key pair locally
+    env.key_filename = [key if os.path.isfile(key) else "~/.ssh/" + key + ".pem" for key in env.key_filename]
     return awsaddresses
 
 # Private method for getting AWS connection
