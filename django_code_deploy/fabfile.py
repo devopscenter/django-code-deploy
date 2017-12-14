@@ -314,22 +314,31 @@ supervisor="/usr/bin/supervisorctl"
 #
 @task
 @parallel
-def reload_web():
+def reload_web(doCollectStatic=None):
     swap_code()
+    if doCollectStatic in TRUTH_VALUES:
+        collect_static()
+
     reload_nginx()
     reload_uwsgi()
 
 @task
 @parallel
-def restart_web():
+def restart_web(doCollectStatic=None):
     swap_code()
+    if doCollectStatic in TRUTH_VALUES:
+        collect_static()
+
     restart_nginx()
     restart_uwsgi()
 
 @task
 @parallel
-def reload_worker(async="djangorq"):
+def reload_worker(async="djangorq",doCollectStatic=None):
     swap_code()
+    if doCollectStatic in TRUTH_VALUES:
+        collect_static()
+
     if async == "djangorq":
         reload_djangorq()
     elif async == "celery":
@@ -338,8 +347,11 @@ def reload_worker(async="djangorq"):
         logger.info("Specified async facility not supported")
 @task
 @parallel
-def restart_worker(async="djangorq"):
+def restart_worker(async="djangorq",doCollectStatic=None):
     swap_code()
+    if doCollectStatic in TRUTH_VALUES:
+        collect_static()
+
     if async == "djangorq":
         restart_djangorq()
     elif async == "celery":
