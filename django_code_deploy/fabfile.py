@@ -342,7 +342,7 @@ def reload_worker(async="djangorq",doCollectStatic=None):
     if async == "djangorq":
         reload_djangorq()
     elif async == "celery":
-        restart_celery
+        restart_celery()
     else:
         logger.info("Specified async facility not supported")
 @task
@@ -355,7 +355,7 @@ def restart_worker(async="djangorq",doCollectStatic=None):
     if async == "djangorq":
         restart_djangorq()
     elif async == "celery":
-        restart_celery
+        restart_celery()
     else:
         logger.info("Specified async facility not supported")
 
