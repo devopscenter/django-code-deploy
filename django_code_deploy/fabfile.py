@@ -36,6 +36,7 @@ class FabricException(Exception):
 
 env.user="ubuntu"
 env.key_filename=[]
+ACCESS_KEY_PATH = "~/.ssh/"
 TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
 
 import boto, urllib2
@@ -142,6 +143,14 @@ def set_access_key(accessKeyPath):
     env.key_filename = [accessKeyPath]
 
 @task
+def set_access_key_path(anAccessKeyPath):
+    global ACCESS_KEY_PATH
+    if(anAccessKeyPath.endswith('/')):
+        ACCESS_KEY_PATH = anAccessKeyPath
+    else:
+        ACCESS_KEY_PATH = anAccessKeyPath + "/"
+
+@task
 def set_user(loginName):
     env.user = loginName
 
@@ -163,15 +172,15 @@ def _get_awsaddress(type,primary, environment,appname,action,region, shard):
     shards = [ e for e in shard.split(' ') ]
     for instance in instances:
         if instance.public_dns_name:                                # make sure there's really an instance here
-            shardt = ("None" if not 'Shard' in instance.tags else instance.tags['Shard'])                    
-            awsaddress = AWSAddress( name=instance.tags['Name'], publicdns=instance.public_dns_name, 
+            shardt = ("None" if not 'Shard' in instance.tags else instance.tags['Shard'])
+            awsaddress = AWSAddress( name=instance.tags['Name'], publicdns=instance.public_dns_name,
                 privateip=instance.private_ip_address, shard=shardt)
             if (shard == 'all') or (shardt in shards):
                 awsaddresses.append(awsaddress)
                 if instance.key_name not in env.key_filename:
                     env.key_filename.append(instance.key_name)
     # convert any AWS key-pair names to a file path for the actual key pair locally
-    env.key_filename = [key if os.path.isfile(key) else "~/.ssh/" + key + ".pem" for key in env.key_filename]
+    env.key_filename = [key if os.path.isfile(key) else ACCESS_KEY_PATH + key + ".pem" for key in env.key_filename]
     return awsaddresses
 
 # Private method for getting AWS connection
@@ -270,7 +279,7 @@ def deploycode(branch,nltkLoad="False",doCollectStatic="True"):
     tar_from_git(branch)
     remote_inflate_code()
     pip_install()
- 
+
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
@@ -376,7 +385,7 @@ def reload_nginx():
 def reload_uwsgi():
     sudo("/bin/bash -c 'echo c > /tmp/uwsgififo'")
 
-@task 
+@task
 def reload_djangorq():
     sudo("for process in $(ps -ef|grep rq|grep -v grep|awk '{print $2}'); do kill -INT ${process}; done")
 
