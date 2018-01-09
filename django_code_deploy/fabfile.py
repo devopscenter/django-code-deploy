@@ -56,15 +56,17 @@ AWSAddress = collections.namedtuple('AWSAddress', 'name publicdns privateip shar
 #  action is the deferred action needed, such as "deploy", "security-updates", etc.
 #  region is aws region
 @task
-def set_hosts(type,primary=None,appname=None,action=None,region=None,shard='all'):
+def set_hosts(type, primary=None, appname=None, action=None, region=None,
+              shard='all', aRole=None):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
+    awsaddresses = _get_awsaddress(type, primary, environment, appname,
+                                   action, region, shard, aRole)
 
-    env.hosts = list( item.publicdns for item in awsaddresses)
+    env.hosts = list(item.publicdns for item in awsaddresses)
     env.host_names = list(item.name for item in awsaddresses)
 
     _log_hosts(awsaddresses)
@@ -73,13 +75,15 @@ def set_hosts(type,primary=None,appname=None,action=None,region=None,shard='all'
 # set_one_host picks a single instance out of the set.
 #  filters are the same as with set_hosts.
 @task
-def set_one_host(type,primary=None,appname=None,action=None,region=None,shard='all'):
+def set_one_host(type, primary=None, appname=None, action=None, region=None,
+                 shard='all', aRole=None):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
+    awsaddresses = _get_awsaddress(type, primary, environment, appname,
+                                   action, region, shard, aRole)
 
     awsaddresses = [awsaddresses[0]]
 
@@ -90,20 +94,22 @@ def set_one_host(type,primary=None,appname=None,action=None,region=None,shard='a
 
 
 @task
-def set_one_host_per_shard(type,primary=None,appname=None,action=None,region=None,shard='all'):
+def set_one_host_per_shard(type, primary=None, appname=None, action=None,
+                           region=None, shard='all', aRole=None):
     if appname is None:
         local('echo "ERROR: appname option is not set"')
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
-    awsaddresses    = _get_awsaddress(type, primary, environment, appname, action, region, shard)
+    awsaddresses = _get_awsaddress(type, primary, environment, appname,
+                                   action, region, shard, aRole)
 
     pruned_list = []
     for ahost in awsaddresses:
         if not next((True for bhost in pruned_list if ahost.shard == bhost.shard), False):
             pruned_list.append(ahost)
 
-    env.hosts = list( item.publicdns for item in pruned_list)
+    env.hosts = list(item.publicdns for item in pruned_list)
     env.host_names = list(item.name for item in pruned_list)
 
     _log_hosts(pruned_list)
@@ -158,8 +164,10 @@ def set_user(loginName):
 def show_environment():
     run('env')
 
-# Private method to get public DNS name for instance with given tag key and value pair
-def _get_awsaddress(type,primary, environment,appname,action,region, shard):
+# Private method to get public DNS name for instance with given tag key
+# and value pair
+def _get_awsaddress(type, primary, environment, appname, action, region, shard,
+                    aRole):
     awsaddresses = []
     connection   = _create_connection(region)
     aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname, "instance-state-name" : "running"}
@@ -167,6 +175,8 @@ def _get_awsaddress(type,primary, environment,appname,action,region, shard):
         aws_tags["tag:ActionNeeded"] = action
     if primary:
         aws_tags["tag:Primary"] = primary
+    if aRole:
+        aws_tags["tag:role"] = aRole
     logger.info("Filtering via tags=%s", aws_tags)
     instances = connection.get_only_instances(filters = aws_tags)
     shards = [ e for e in shard.split(' ') ]
