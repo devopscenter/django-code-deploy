@@ -33,10 +33,13 @@ from git import Repo
 class FabricException(Exception):
     pass
 
-
+# Set some global defaults for all operations
 env.user="ubuntu"
 env.key_filename=[]
 ACCESS_KEY_PATH = "~/.ssh/"
+env.connection_attempts=3
+
+
 TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
 
 import boto, urllib2
