@@ -19,14 +19,15 @@ import logging
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 formatter = logging.Formatter(
-        '%(asctime)s %(levelname)-8s %(message)s')
+    '%(asctime)s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 from fabric.api import *
 from time import gmtime, strftime
-import os, sys
+import os
+import sys
 from git import Repo
 
 
@@ -34,22 +35,25 @@ class FabricException(Exception):
     pass
 
 # Set some global defaults for all operations
-env.user="ubuntu"
-env.key_filename=[]
+env.user = "ubuntu"
+env.key_filename = []
 ACCESS_KEY_PATH = "~/.ssh/"
-env.connection_attempts=3
+env.connection_attempts = 3
 
 
-TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes', 'YES', 'yes', 'y'] # arguments in fab are always strings
+TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes',
+                'YES', 'yes', 'y']  # arguments in fab are always strings
 
-import boto, urllib2
-from   boto.ec2 import connect_to_region
+import boto
+import urllib2
+from boto.ec2 import connect_to_region
 
 import distutils.sysconfig
 
-#objects
+# objects
 import collections
-AWSAddress = collections.namedtuple('AWSAddress', 'name publicdns privateip shard')
+AWSAddress = collections.namedtuple(
+    'AWSAddress', 'name publicdns privateip shard')
 
 
 # set_hosts selects all instances that match the filter criteria.
@@ -118,13 +122,15 @@ def set_one_host_per_shard(type, primary=None, appname=None, action=None,
     _log_hosts(pruned_list)
 
 
-
 def _log_hosts(awsaddresses):
     logger.info("")
-    logger.info("Instances to operate upon - name, public dns, private ip, shard")
-    logger.info("---------------------------------------------------------------")
+    logger.info(
+        "Instances to operate upon - name, public dns, private ip, shard")
+    logger.info(
+        "---------------------------------------------------------------")
     for instance in awsaddresses:
-        logger.info("%s  %s  %s  %s", instance.name, instance.publicdns, instance.privateip, instance.shard)
+        logger.info("%s  %s  %s  %s", instance.name,
+                    instance.publicdns, instance.privateip, instance.shard)
     logger.info("")
     logger.info("")
     logger.info("keys: %s", env.key_filename)
@@ -135,21 +141,26 @@ def _log_hosts(awsaddresses):
 def dev():
     os.environ["AWS_ENVIRONMENT"] = "dev"
 
+
 @task
 def staging():
     os.environ["AWS_ENVIRONMENT"] = "staging"
+
 
 @task
 def prod():
     os.environ["AWS_ENVIRONMENT"] = "prod"
 
+
 @task
 def set_environment(environment):
     os.environ["AWS_ENVIRONMENT"] = environment
 
+
 @task
 def set_access_key(accessKeyPath):
     env.key_filename = [accessKeyPath]
+
 
 @task
 def set_access_key_path(anAccessKeyPath):
@@ -159,9 +170,11 @@ def set_access_key_path(anAccessKeyPath):
     else:
         ACCESS_KEY_PATH = anAccessKeyPath + "/"
 
+
 @task
 def set_user(loginName):
     env.user = loginName
+
 
 @task
 def show_environment():
@@ -169,11 +182,14 @@ def show_environment():
 
 # Private method to get public DNS name for instance with given tag key
 # and value pair
+
+
 def _get_awsaddress(type, primary, environment, appname, action, region, shard,
                     aRole):
     awsaddresses = []
-    connection   = _create_connection(region)
-    aws_tags = {"tag:Type" : type, "tag:Env" : environment, "tag:App" : appname, "instance-state-name" : "running"}
+    connection = _create_connection(region)
+    aws_tags = {"tag:Type": type, "tag:Env": environment,
+                "tag:App": appname, "instance-state-name": "running"}
     if action:
         aws_tags["tag:ActionNeeded"] = action
     if primary:
@@ -181,45 +197,54 @@ def _get_awsaddress(type, primary, environment, appname, action, region, shard,
     if aRole:
         aws_tags["tag:role"] = aRole
     logger.info("Filtering via tags=%s", aws_tags)
-    instances = connection.get_only_instances(filters = aws_tags)
-    shards = [ e for e in shard.split(' ') ]
+    instances = connection.get_only_instances(filters=aws_tags)
+    shards = [e for e in shard.split(' ')]
     for instance in instances:
         if instance.public_dns_name:                                # make sure there's really an instance here
-            shardt = ("None" if not 'Shard' in instance.tags else instance.tags['Shard'])
-            awsaddress = AWSAddress( name=instance.tags['Name'], publicdns=instance.public_dns_name,
-                privateip=instance.private_ip_address, shard=shardt)
+            shardt = (
+                "None" if not 'Shard' in instance.tags else instance.tags['Shard'])
+            awsaddress = AWSAddress(name=instance.tags['Name'], publicdns=instance.public_dns_name,
+                                    privateip=instance.private_ip_address, shard=shardt)
             if (shard == 'all') or (shardt in shards):
                 awsaddresses.append(awsaddress)
                 if instance.key_name not in env.key_filename:
                     env.key_filename.append(instance.key_name)
-    # convert any AWS key-pair names to a file path for the actual key pair locally
-    env.key_filename = [key if os.path.isfile(key) else ACCESS_KEY_PATH + key + ".pem" for key in env.key_filename]
+    # convert any AWS key-pair names to a file path for the actual key pair
+    # locally
+    env.key_filename = [key if os.path.isfile(
+        key) else ACCESS_KEY_PATH + key + ".pem" for key in env.key_filename]
     return awsaddresses
 
 # Private method for getting AWS connection
+
+
 def _create_connection(region):
     logger.info("")
     logger.info("Connecting to AWS region %s", region)
 
     connection = connect_to_region(
-        region_name = region
-   )
+        region_name=region
+    )
 
     logger.info("Connection with AWS established")
     return connection
 
-timest =  strftime("%Y-%m-%d_%H-%M-%S", gmtime())
-UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)    # deploy directories have timestamps for names.
+timest = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
+# deploy directories have timestamps for names.
+UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)
 TAR_NAME = "devops"
+
 
 @task
 def tar_from_git(branch):
     local('rm -rf %s.tar.gz' % TAR_NAME)
-    local('git archive %s --format=tar.gz --output=%s.tar.gz' % (branch,TAR_NAME))
+    local('git archive %s --format=tar.gz --output=%s.tar.gz' %
+          (branch, TAR_NAME))
+
 
 @task
 def unpack_code():
-    cmd = "mkdir -p "+UPLOAD_CODE_PATH
+    cmd = "mkdir -p " + UPLOAD_CODE_PATH
     sudo(cmd)
     put('%s.tar.gz' % TAR_NAME, '%s' % UPLOAD_CODE_PATH, use_sudo=True)
     with cd('%s' % UPLOAD_CODE_PATH):
@@ -234,26 +259,36 @@ def link_new_code():
         pass
     sudo('ln -s %s /data/deploy/pending' % UPLOAD_CODE_PATH)
     with cd('/data/deploy'):
-# keep onlly 5 most recent deploys, excluding any symlinks or other purely alpha directories. The steps are
-#  1. generate list of directories, sorted by modification time.
-#  2. reemove anything tha tdoes not have a "2" in it, e.g. the millenia (leftmost digit of the 4 digit year)
-#  3. keep the 5 most recent - these become the ones to keep.
-#  4. add a listing of all directories to these top 5.
-#  5. sort the combined listing
-#  6. keep only directory names that are *not* repeated - so this will be all directories beyond those first 5 numeric directories.
-#  7. filter out any alpha directories that were added by the second ls.
-#  8. remove all of the directories that remain.
+        # keep onlly 5 most recent deploys, excluding any symlinks or other purely alpha directories. The steps are
+        #  1. generate list of directories, sorted by modification time.
+        #  2. reemove anything tha tdoes not have a "2" in it, e.g. the millenia (leftmost digit of the 4 digit year)
+        #  3. keep the 5 most recent - these become the ones to keep.
+        #  4. add a listing of all directories to these top 5.
+        #  5. sort the combined listing
+        #  6. keep only directory names that are *not* repeated - so this will be all directories beyond those first 5 numeric directories.
+        #  7. filter out any alpha directories that were added by the second ls.
+        #  8. remove all of the directories that remain.
         sudo('(ls -t|grep 2|head -n 5;ls)|sort|uniq -u|grep 2|xargs rm -rf')
+
+
+@task
+def yarn_install():
+    with cd('/data/deploy/pending/servers/api/dist'):
+        run('yarn install')
+
 
 @task
 def pip_install():
     with cd('/data/deploy/pending'):
         sudo('pip install -r requirements.txt')
 
+
 @task
 def download_nltk_data():
     run("echo 'loading NLTK data specified in nltk.txt'")
-    sudo_app('if [[ -f nltk.txt ]]; then mkdir -p /usr/share/nltk_data/; cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
+    sudo_app(
+        'if [[ -f nltk.txt ]]; then mkdir -p /usr/share/nltk_data/; cat nltk.txt | while read -r line; do python -m nltk.downloader -d /usr/share/nltk_data ${line}; done; fi')
+
 
 @task
 def collect_static():
@@ -264,16 +299,18 @@ def collect_static():
 
 
 @task
-#https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
+# https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
 def django_check():
     with cd('/data/deploy/pending'):
         sudo('python manage.py check')
+
 
 @task
 def remote_inflate_code():
     unpack_code()
     link_new_code()
     codeversioner()
+
 
 @task
 def codeversioner():
@@ -287,11 +324,16 @@ def codeversioner():
         cmd = 'cp /tmp/versioner.py /data/deploy/pending/versioner.py'
         sudo(cmd)
 
+
 @task
-def deploycode(branch,nltkLoad="False",doCollectStatic="True"):
+def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False"):
     tar_from_git(branch)
     remote_inflate_code()
-    pip_install()
+
+    if yarn in TRUTH_VALUSE:
+        yarn_install()
+    else:
+        pip_install()
 
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
@@ -299,11 +341,13 @@ def deploycode(branch,nltkLoad="False",doCollectStatic="True"):
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
-        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
+             '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+
 
 @task
 @parallel
-def deployParallel(nltkLoad="False",doCollectStatic="True"):
+def deployParallel(nltkLoad="False", doCollectStatic="True"):
     remote_inflate_code()
     pip_install()
     if nltkLoad in TRUTH_VALUES:
@@ -312,11 +356,14 @@ def deployParallel(nltkLoad="False",doCollectStatic="True"):
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
-        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' + '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
+             '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+
 
 @task
-def dbmigrate_docker(containerid,codepath='/data/deploy/current'):
+def dbmigrate_docker(containerid, codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
+
 
 @task
 @parallel
@@ -328,12 +375,14 @@ def dbmigrate(migrateOptions=None):
 
     run(cmdToRun)
 
-supervisor="/usr/bin/supervisorctl"
+supervisor = "/usr/bin/supervisorctl"
 
 #
 # These atomic tasks for putting the new deploy into effect are preferred, as they
 # may run in parallel, while minimizing the exposure between the swap_code and putting the new code into effect
 #
+
+
 @task
 @parallel
 def reload_web(doCollectStatic=None):
@@ -343,6 +392,7 @@ def reload_web(doCollectStatic=None):
 
     reload_nginx()
     reload_uwsgi()
+
 
 @task
 @parallel
@@ -354,9 +404,10 @@ def restart_web(doCollectStatic=None):
     restart_nginx()
     restart_uwsgi()
 
+
 @task
 @parallel
-def reload_worker(async="djangorq",doCollectStatic=None):
+def reload_worker(async="djangorq", doCollectStatic=None):
     swap_code()
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
@@ -367,9 +418,11 @@ def reload_worker(async="djangorq",doCollectStatic=None):
         restart_celery()
     else:
         logger.info("Specified async facility not supported")
+
+
 @task
 @parallel
-def restart_worker(async="djangorq",doCollectStatic=None):
+def restart_worker(async="djangorq", doCollectStatic=None):
     swap_code()
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
@@ -390,46 +443,58 @@ def swap_code():
         pass
     sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
 
+
 @task
 def reload_nginx():
     sudo("/usr/local/nginx/sbin/nginx -s reload")
+
 
 @task
 def reload_uwsgi():
     sudo("/bin/bash -c 'echo c > /tmp/uwsgififo'")
 
+
 @task
 def reload_djangorq():
-    sudo("for process in $(ps -ef|grep rq|grep -v grep|awk '{print $2}'); do kill -INT ${process}; done")
+    sudo(
+        "for process in $(ps -ef|grep rq|grep -v grep|awk '{print $2}'); do kill -INT ${process}; done")
+
 
 @task
 def restart_nginx():
     sudo("%s restart nginx" % supervisor)
+
 
 @task
 def restart_uwsgi():
     sudo("mkdir -p /var/run/uwsgi")
     sudo("%s restart uwsgi" % supervisor)
 
+
 @task
 def restart_celery():
     sudo("%s restart celery:*" % supervisor)
+
 
 @task
 def restart_djangorq():
     sudo("%s restart djangorq-worker:*" % supervisor)
 
+
 @task
 def restart_pgpool():
     sudo("%s restart pgpool" % supervisor)
+
 
 @task
 def run_cmd(cmdToRun):
     run(cmdToRun)
 
+
 @task
 def sudo_cmd(cmdToRun):
     sudo(cmdToRun)
+
 
 @task
 def run_app(cmdToRun, stopOnError="True"):
@@ -437,12 +502,13 @@ def run_app(cmdToRun, stopOnError="True"):
         with cd('/data/deploy/pending'):
             run(cmdToRun)
     else:
-        with settings(abort_exception = FabricException):
+        with settings(abort_exception=FabricException):
             try:
                 with cd('/data/deploy/pending'):
                     run(cmdToRun)
             except FabricException:
                 pass
+
 
 @task
 def sudo_app(cmdToRun):
@@ -450,13 +516,11 @@ def sudo_app(cmdToRun):
         sudo(cmdToRun)
 
 
-
 # Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
-# uwsgi, djangorq, and and celery can make use of it (e.g. to pass to Sentry for releases)
+# uwsgi, djangorq, and and celery can make use of it (e.g. to pass to
+# Sentry for releases)
 
 @task
 def set_git_sha():
     local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini', shell="/bin/bash")
     local('git add .')
-
-
