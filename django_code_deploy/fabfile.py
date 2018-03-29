@@ -347,9 +347,13 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False"):
 
 @task
 @parallel
-def deployParallel(nltkLoad="False", doCollectStatic="True"):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
     remote_inflate_code()
-    pip_install()
+    if yarn in TRUTH_VALUSE:
+        yarn_install()
+    else:
+        pip_install()
+
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
