@@ -272,9 +272,13 @@ def link_new_code():
 
 
 @task
-def yarn_install():
-    with cd('/data/deploy/pending/servers/api/dist'):
-        run('yarn install')
+def yarn_install(aPath):
+    pathToInstall = '/data/deploy/pending/' + aPath
+    try:
+        with cd(pathToInstall):
+            run('yarn install')
+    except FabricException:
+        pass
 
 
 @task
@@ -326,12 +330,12 @@ def codeversioner():
 
 
 @task
-def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False"):
+def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", yarnInstallPath=None):
     tar_from_git(branch)
     remote_inflate_code()
 
     if yarn in TRUTH_VALUES:
-        yarn_install()
+        yarn_install(yarnInstallPath)
     else:
         pip_install()
 
