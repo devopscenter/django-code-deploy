@@ -303,6 +303,16 @@ def collect_static():
 
 
 @task
+def run_npm_dist():
+    pathToInstall = '/data/deploy/pending/' + aPath
+    try:
+        with cd(pathToInstall):
+            sudo('npm run dist')
+    except FabricException:
+        pass
+
+
+@task
 # https://docs.djangoproject.com/en/1.8/ref/django-admin/#django-admin-check
 def django_check():
     with cd('/data/deploy/pending'):
@@ -330,12 +340,13 @@ def codeversioner():
 
 
 @task
-def deployServerCode(branch, yarn="False", yarnInstallPath=None):
+def deployServerCode(branch, yarn="False", installPath=None):
     tar_from_git(branch)
     remote_inflate_code()
+    run_npm_dist(installPath)
 
     if yarn in TRUTH_VALUES:
-        yarn_install(yarnInstallPath)
+        yarn_install(installPath)
     else:
         pip_install()
 
