@@ -273,8 +273,8 @@ def link_new_code():
 
 
 @task
-def yarn_install(aPath):
-    pathToInstall = '/data/deploy/pending/' + aPath
+def yarn_install(installPath):
+    pathToInstall = '/data/deploy/pending/' + installPath
     try:
         with cd(pathToInstall):
             sudo('yarn --no-progress --non-interactive install')
@@ -304,9 +304,17 @@ def collect_static():
 
 
 @task
-def setup_server_symlinks(aPath):
-    pathToInstallFrom = '/data/deploy/pending/' + aPath
-    pathToInstallTo = '/data/deploy/pending/' + aPath + "/dist"
+def setup_web_symlinks(installPath):
+    pathToInstallFrom = '/data/deploy/pending/' + installPath
+    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
+    sudo('if [[ -d %s/images ]]; then ln -s %s/images %s/images ; else echo "images not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+
+@task
+def setup_server_symlinks(installPath):
+    pathToInstallFrom = '/data/deploy/pending/' + installPath
+    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
     sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
@@ -324,8 +332,8 @@ def setup_server_symlinks(aPath):
 
 
 @task
-def run_npm_dist(aPath):
-    pathToInstall = '/data/deploy/pending/' + aPath
+def run_npm_dist(installPath):
+    pathToInstall = '/data/deploy/pending/' + installPath
     try:
         with cd(pathToInstall):
             sudo('npm run dist')
@@ -358,6 +366,12 @@ def codeversioner():
         run("echo 'version=\"%s\"' > /tmp/versioner.py" % versionhash)
         cmd = 'cp /tmp/versioner.py /data/deploy/pending/versioner.py'
         sudo(cmd)
+
+
+@task
+def setupDeploy(branch):
+    tar_from_git(branch)
+    remote_inflate_code()
 
 
 @task
