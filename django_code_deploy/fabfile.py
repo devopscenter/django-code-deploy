@@ -313,7 +313,7 @@ def setup_server_symlinks(aPath):
                 sudo('ln -s %s/node_modules %s/node_modules' %
                      (pathToInstallFrom, pathToInstallTo))
 
-            if os.path.isfile(pathtoInstallFrom + 'config/settings.js'):
+            if os.path.isfile(pathToInstallFrom + 'config/settings.js'):
                 sudo('ln -s %s/settings.js %s/config/settings.js' %
                      (pathToInstallFrom, pathToInstallTo))
 
@@ -325,7 +325,7 @@ def setup_server_symlinks(aPath):
                 sudo('ln -s %s/nec %s/public/nec' %
                      (pathToInstallFrom, pathToInstallTo))
 
-            if os.path.isfile(pathtoInstallFrom + 'public/login.html'):
+            if os.path.isfile(pathToInstallFrom + 'public/login.html'):
                 sudo('ln -s %s/login.html %s/public/login.html' %
                      (pathToInstallFrom, pathToInstallTo))
 
