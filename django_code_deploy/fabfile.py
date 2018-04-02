@@ -305,21 +305,21 @@ def collect_static():
 
 @task
 def setup_server_symlinks(aPath):
-    pathToInstallFrom = '/media/data/deploy/current/' + aPath
-    pathToInstallTo = '/media/data/deploy/current/' + aPath + "/dist"
-    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else; echo "1"; fi' %
+    pathToInstallFrom = '/data/deploy/current/' + aPath
+    pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
+    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "1"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/config/settings.js ]]; then ln -s %s/config/settings.js %s/settings.js ; else ; echo "2"; fi' %
+    sudo('if [[ -f %s/config/settings.js ]]; then ln -s %s/config/settings.js %s/settings.js ; else  echo "2"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else ; echo "3"; fi' %
+    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "3"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else; echo "4"; fi' %
+    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else echo "4"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else; echo "5";  fi' %
+    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "5";  fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
 

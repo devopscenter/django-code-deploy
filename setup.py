@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
     name='django-code-deploy',
     packages=['django_code_deploy'],  # this must be the same as the name above
-    version='0.9.115',
+    version='0.9.116',
     description='Deploys Django code to AWS based on tags',
     author='Josh devops.center, Bob devops.center, Gregg devops.center',
     author_email='josh@devops.center, bob@devops.center, gjensen@devops.center',
