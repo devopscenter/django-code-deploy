@@ -305,8 +305,8 @@ def collect_static():
 
 @task
 def setup_server_symlinks(aPath):
-    pathToInstallFrom = '/data/deploy/current/' + aPath
-    pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
+    pathToInstallFrom = '/data/deploy/pending/' + aPath
+    pathToInstallTo = '/data/deploy/pending/' + aPath + "/dist"
     sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
@@ -319,7 +319,7 @@ def setup_server_symlinks(aPath):
     sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else echo "public/nec not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "public/loging.html not available";  fi' %
+    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "public/login.html not available";  fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
 
