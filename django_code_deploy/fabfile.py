@@ -309,30 +309,34 @@ def setup_server_symlinks(aPath):
     pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
     try:
         with cd(pathToInstallFrom):
-            if os.path.exists(pathToInstallFrom + '/node_modules'):
-                print("1")
-                sudo('ln -s %s/node_modules %s/node_modules' %
-                     (pathToInstallFrom, pathToInstallTo))
+            print os.getcwd()
 
-            if os.path.isfile(pathToInstallFrom + 'config/settings.js'):
-                print("2")
-                sudo('ln -s %s/settings.js %s/config/settings.js' %
-                     (pathToInstallFrom, pathToInstallTo))
+        nodeModulePath = pathToInstallFrom + '/node_modules'
+        print (nodeModulePath)
+        if os.path.exists(nodeModulePath):
+            print("1")
+            sudo('ln -s %s/node_modules %s/node_modules' %
+                 (pathToInstallFrom, pathToInstallTo))
 
-            if os.path.exists(pathToInstallFrom + 'public/metaswitch'):
-                print("3")
-                sudo('ln -s %s/metaswitch %s/public/metaswitch' %
-                     (pathToInstallFrom, pathToInstallTo))
+        if os.path.isfile(pathToInstallFrom + 'config/settings.js'):
+            print("2")
+            sudo('ln -s %s/settings.js %s/config/settings.js' %
+                 (pathToInstallFrom, pathToInstallTo))
 
-            if os.path.exists(pathToInstallFrom + 'public/nec'):
-                print("4")
-                sudo('ln -s %s/nec %s/public/nec' %
-                     (pathToInstallFrom, pathToInstallTo))
+        if os.path.exists(pathToInstallFrom + 'public/metaswitch'):
+            print("3")
+            sudo('ln -s %s/metaswitch %s/public/metaswitch' %
+                 (pathToInstallFrom, pathToInstallTo))
 
-            if os.path.isfile(pathToInstallFrom + 'public/login.html'):
-                print("5")
-                sudo('ln -s %s/login.html %s/public/login.html' %
-                     (pathToInstallFrom, pathToInstallTo))
+        if os.path.exists(pathToInstallFrom + 'public/nec'):
+            print("4")
+            sudo('ln -s %s/nec %s/public/nec' %
+                 (pathToInstallFrom, pathToInstallTo))
+
+        if os.path.isfile(pathToInstallFrom + 'public/login.html'):
+            print("5")
+            sudo('ln -s %s/login.html %s/public/login.html' %
+                 (pathToInstallFrom, pathToInstallTo))
 
     except FabricException:
         pass
