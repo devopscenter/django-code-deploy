@@ -308,7 +308,7 @@ def setup_server_symlinks(aPath):
     pathToInstallFrom = '/data/deploy/pending/' + aPath
     pathToInstallTo = '/data/deploy/pending/' + aPath + "/dist"
     try:
-        with cd(pathToInstall):
+        with cd(pathToInstallTo):
             sudo('ln -s %s/node_modules %s/node_modules' %
                  (pathToInstallTo, pathToInstallFrom))
             sudo('ln -s %s/settings.js %s/config/settings.js' %
