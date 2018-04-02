@@ -308,17 +308,26 @@ def setup_server_symlinks(aPath):
     pathToInstallFrom = '/data/deploy/pending/' + aPath
     pathToInstallTo = '/data/deploy/pending/' + aPath + "/dist"
     try:
-        with cd(pathToInstallTo):
-            sudo('ln -s %s/node_modules %s/node_modules' %
-                 (pathToInstallTo, pathToInstallFrom))
-            sudo('ln -s %s/settings.js %s/config/settings.js' %
-                 (pathToInstallTo, pathToInstallFrom))
-            sudo('ln -s %s/metaswitch %s/public/metaswitch' %
-                 (pathToInstallTo, pathToInstallFrom))
-            sudo('ln -s %s/nec %s/public/nec' %
-                 (pathToInstallTo, pathToInstallFrom))
-            sudo('ln -s %s/login.html %s/public/login.html' %
-                 (pathToInstallTo, pathToInstallFrom))
+        with cd(pathToInstallFrom):
+            if os.path.exists(pathToInstallFrom + '/node_modules'):
+                sudo('ln -s %s/node_modules %s/node_modules' %
+                     (pathToInstallFrom, pathToInstallTo))
+
+            if os.path.isfile(pathtoInstallFrom + 'config/settings.js'):
+                sudo('ln -s %s/settings.js %s/config/settings.js' %
+                     (pathToInstallFrom, pathToInstallTo))
+
+            if os.path.exists(pathToInstallFrom + 'public/metaswitch'):
+                sudo('ln -s %s/metaswitch %s/public/metaswitch' %
+                     (pathToInstallFrom, pathToInstallTo))
+
+            if os.path.exists(pathToInstallFrom + 'public/nec'):
+                sudo('ln -s %s/nec %s/public/nec' %
+                     (pathToInstallFrom, pathToInstallTo))
+
+            if os.path.isfile(pathtoInstallFrom + 'public/login.html'):
+                sudo('ln -s %s/login.html %s/public/login.html' %
+                     (pathToInstallFrom, pathToInstallTo))
 
     except FabricException:
         pass
