@@ -342,13 +342,14 @@ def codeversioner():
 @task
 def deployServerCode(branch, yarn="False", installPath=None):
     tar_from_git(branch)
-    remote_inflate_code()
     run_npm_dist(installPath)
 
     if yarn in TRUTH_VALUES:
         yarn_install(installPath)
     else:
         pip_install()
+
+    remote_inflate_code()
 
 
 @task
