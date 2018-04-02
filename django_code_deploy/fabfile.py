@@ -309,7 +309,7 @@ def setup_server_symlinks(aPath):
     pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
     try:
         with cd(pathToInstallFrom):
-            if not os.path.exists(pathToInstallFrom + '/node_modules'):
+            if os.path.exists(pathToInstallFrom + '/node_modules'):
                 print("1")
                 sudo('ln -s %s/node_modules %s/node_modules' %
                      (pathToInstallFrom, pathToInstallTo))
@@ -386,7 +386,6 @@ def deployServerCode(branch, yarn="False", installPath=None):
         pip_install()
 
     run_npm_dist(installPath)
-    setup_server_symlinks(installPath)
 
 
 @task
