@@ -276,7 +276,7 @@ def yarn_install(aPath):
     pathToInstall = '/data/deploy/pending/' + aPath
     try:
         with cd(pathToInstall):
-            run('yarn --no-progress --non-interactive install')
+            sudo('yarn --no-progress --non-interactive install')
     except FabricException:
         pass
 
