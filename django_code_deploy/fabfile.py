@@ -276,7 +276,7 @@ def yarn_install(aPath):
     pathToInstall = '/data/deploy/pending/' + aPath
     try:
         with cd(pathToInstall):
-            run('yarn install')
+            run('yarn --no-progress --non-interactive install')
     except FabricException:
         pass
 
@@ -351,10 +351,10 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", y
 
 @task
 @parallel
-def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", yarnInstallPath=None):
     remote_inflate_code()
     if yarn in TRUTH_VALUES:
-        yarn_install()
+        yarn_install(yarnInstallPath)
     else:
         pip_install()
 
