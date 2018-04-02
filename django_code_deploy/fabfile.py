@@ -330,6 +330,17 @@ def codeversioner():
 
 
 @task
+def deployServerCode(branch, yarn="False", yarnInstallPath=None):
+    tar_from_git(branch)
+    remote_inflate_code()
+
+    if yarn in TRUTH_VALUES:
+        yarn_install(yarnInstallPath)
+    else:
+        pip_install()
+
+
+@task
 def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", yarnInstallPath=None):
     tar_from_git(branch)
     remote_inflate_code()
@@ -400,6 +411,13 @@ def reload_web(doCollectStatic=None):
 
     reload_nginx()
     reload_uwsgi()
+
+
+@task
+@parallel
+def reload_node(processName):
+    swap_code()
+    sudo("%s restart %s" % supervisor, processName)
 
 
 @task
