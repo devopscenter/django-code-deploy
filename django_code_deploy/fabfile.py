@@ -330,7 +330,7 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False"):
     tar_from_git(branch)
     remote_inflate_code()
 
-    if yarn in TRUTH_VALUSE:
+    if yarn in TRUTH_VALUES:
         yarn_install()
     else:
         pip_install()
@@ -349,7 +349,7 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False"):
 @parallel
 def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
     remote_inflate_code()
-    if yarn in TRUTH_VALUSE:
+    if yarn in TRUTH_VALUES:
         yarn_install()
     else:
         pip_install()
