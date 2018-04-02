@@ -307,26 +307,30 @@ def collect_static():
 def setup_server_symlinks(aPath):
     pathToInstallFrom = '/data/deploy/current/' + aPath
     pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
-    print(pathToInstallFrom)
     try:
         with cd(pathToInstallFrom):
             if os.path.exists(pathToInstallFrom + '/node_modules'):
+                print("1")
                 sudo('ln -s %s/node_modules %s/node_modules' %
                      (pathToInstallFrom, pathToInstallTo))
 
             if os.path.isfile(pathToInstallFrom + 'config/settings.js'):
+                print("2")
                 sudo('ln -s %s/settings.js %s/config/settings.js' %
                      (pathToInstallFrom, pathToInstallTo))
 
             if os.path.exists(pathToInstallFrom + 'public/metaswitch'):
+                print("3")
                 sudo('ln -s %s/metaswitch %s/public/metaswitch' %
                      (pathToInstallFrom, pathToInstallTo))
 
             if os.path.exists(pathToInstallFrom + 'public/nec'):
+                print("4")
                 sudo('ln -s %s/nec %s/public/nec' %
                      (pathToInstallFrom, pathToInstallTo))
 
             if os.path.isfile(pathToInstallFrom + 'public/login.html'):
+                print("5")
                 sudo('ln -s %s/login.html %s/public/login.html' %
                      (pathToInstallFrom, pathToInstallTo))
 
