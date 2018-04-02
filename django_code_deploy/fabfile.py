@@ -417,7 +417,7 @@ def reload_web(doCollectStatic=None):
 @parallel
 def reload_node(processName):
     swap_code()
-    sudo("%s restart %s" % supervisor, processName)
+    sudo("%s restart %s" % (supervisor, processName))
 
 
 @task
