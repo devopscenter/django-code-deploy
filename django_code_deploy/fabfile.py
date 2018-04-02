@@ -307,8 +307,11 @@ def collect_static():
 def setup_server_symlinks(aPath):
     pathToInstallFrom = '/data/deploy/current/' + aPath
     pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
+    print("-1")
     try:
+        print("0")
         with cd(pathToInstallFrom):
+            print("A")
             if os.path.exists(pathToInstallFrom + '/node_modules'):
                 print("1")
                 sudo('ln -s %s/node_modules %s/node_modules' %
