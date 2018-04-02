@@ -34,6 +34,7 @@ from git import Repo
 class FabricException(Exception):
     pass
 
+
 # Set some global defaults for all operations
 env.user = "ubuntu"
 env.key_filename = []
@@ -303,6 +304,27 @@ def collect_static():
 
 
 @task
+def setup_server_symlinks(aPath):
+    pathToInstallFrom = '/data/deploy/pending/' + aPath
+    pathToInstallTo = '/data/deploy/pending/' + aPath + "/dist"
+    try:
+        with cd(pathToInstall):
+            sudo('ln -s %s/node_modules %s/node_modules' %
+                 (pathToInstallTo, pathToInstallFrom))
+            sudo('ln -s %s/settings.js %s/config/settings.js' %
+                 (pathToInstallTo, pathToInstallFrom))
+            sudo('ln -s %s/metaswitch %s/public/metaswitch' %
+                 (pathToInstallTo, pathToInstallFrom))
+            sudo('ln -s %s/nec %s/public/nec' %
+                 (pathToInstallTo, pathToInstallFrom))
+            sudo('ln -s %s/login.html %s/public/login.html' %
+                 (pathToInstallTo, pathToInstallFrom))
+
+    except FabricException:
+        pass
+
+
+@task
 def run_npm_dist(aPath):
     pathToInstall = '/data/deploy/pending/' + aPath
     try:
@@ -350,6 +372,7 @@ def deployServerCode(branch, yarn="False", installPath=None):
         pip_install()
 
     run_npm_dist(installPath)
+    setup_server_symlinks(installPath)
 
 
 @task
@@ -406,7 +429,9 @@ def dbmigrate(migrateOptions=None):
 
     run(cmdToRun)
 
+
 supervisor = "/usr/bin/supervisorctl"
+
 
 #
 # These atomic tasks for putting the new deploy into effect are preferred, as they
