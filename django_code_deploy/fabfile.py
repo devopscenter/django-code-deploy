@@ -303,7 +303,7 @@ def collect_static():
 
 
 @task
-def run_npm_dist():
+def run_npm_dist(aPath):
     pathToInstall = '/data/deploy/pending/' + aPath
     try:
         with cd(pathToInstall):
@@ -352,12 +352,12 @@ def deployServerCode(branch, yarn="False", installPath=None):
 
 
 @task
-def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", yarnInstallPath=None):
+def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", installPath=None):
     tar_from_git(branch)
     remote_inflate_code()
 
     if yarn in TRUTH_VALUES:
-        yarn_install(yarnInstallPath)
+        yarn_install(installPath)
     else:
         pip_install()
 
@@ -373,10 +373,10 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", y
 
 @task
 @parallel
-def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", yarnInstallPath=None):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", installPath=None):
     remote_inflate_code()
     if yarn in TRUTH_VALUES:
-        yarn_install(yarnInstallPath)
+        yarn_install(installPath)
     else:
         pip_install()
 
