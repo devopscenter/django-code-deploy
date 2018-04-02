@@ -307,6 +307,7 @@ def collect_static():
 def setup_server_symlinks(aPath):
     pathToInstallFrom = '/data/deploy/current/' + aPath
     pathToInstallTo = '/data/deploy/current/' + aPath + "/dist"
+    print(pathToInstallFrom)
     try:
         with cd(pathToInstallFrom):
             if os.path.exists(pathToInstallFrom + '/node_modules'):
