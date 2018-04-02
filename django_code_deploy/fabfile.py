@@ -307,19 +307,19 @@ def collect_static():
 def setup_server_symlinks(aPath):
     pathToInstallFrom = '/media/data/deploy/current/' + aPath
     pathToInstallTo = '/media/data/deploy/current/' + aPath + "/dist"
-    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules' %
+    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/config/settings.js ]]; then ln -s %s/config/settings.js %s/settings.js' %
+    sudo('if [[ -f %s/config/settings.js ]]; then ln -s %s/config/settings.js %s/settings.js; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch' %
+    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec' %
+    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html' %
+    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
 
