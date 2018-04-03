@@ -427,6 +427,12 @@ def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", insta
 
 
 @task
+def dbmigtrate_node(installPath):
+    with cd(installPath + "/dist"):
+        run('npm run migrate')
+
+
+@task
 def dbmigrate_docker(containerid, codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
