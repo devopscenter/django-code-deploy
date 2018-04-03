@@ -318,7 +318,7 @@ def setup_server_symlinks(installPath):
     sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/config/settings.js ]]; then ln -s %s/config/settings.js %s/settings.js ; else  echo "config/settings.js not available"; fi' %
+    sudo('if [[ -f %s/config/settings.js ]]; then ln -nfs %s/config/settings.js %s/settings.js ; else  echo "config/settings.js not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
     sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "public/metaswitch not available"; fi' %
