@@ -427,7 +427,7 @@ def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", insta
 
 
 @task
-def dbmigtrate_node(installPath):
+def dbmigrate_node(installPath):
     with cd(installPath + "/dist"):
         run('npm run migrate')
 
