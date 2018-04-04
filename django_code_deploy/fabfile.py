@@ -318,10 +318,7 @@ def setup_server_symlinks(installPath):
     sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
-    sudo('if [[ -f %s/config/settings.js ]]; then ln -nfs %s/config %s/config ; else  echo "config/settings.js not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -f %s/config/settings.js ]]; then ln -nfs %s/config/settings.js %s/settings.js ; else  echo "config/settings.js not available"; fi' %
+    sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
          (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
     sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "public/metaswitch not available"; fi' %
@@ -412,10 +409,12 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", i
 
 @task
 @parallel
+
 def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", installPath=None):
     remote_inflate_code()
     if yarn in TRUTH_VALUES:
         yarn_install(installPath)
+
     else:
         pip_install()
 
