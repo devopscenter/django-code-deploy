@@ -1,7 +1,7 @@
 #
 # Django Code Deploy
 #
-# Copyright 2015 - 2016 devops.center
+# Copyright 2015 - 2018 devops.center
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -235,6 +235,26 @@ timest = strftime("%Y-%m-%d_%H-%M-%S", gmtime())
 UPLOAD_CODE_PATH = os.path.join("/data/deploy", timest)
 TAR_NAME = "devops"
 
+# These are tasks for building on jenkins (or other build box)
+# Initally support a yarn-based workflow for node
+@task
+def build(branch, installPath):
+    
+    # ensure yarn installs all build tools
+    with lcd(installPath):
+        local("pwd")
+        local('yarn --production=false --no-progress --non-interactive install')
+
+        # do the build
+        local('npm run dist')
+
+    # make sure the new files are part of the local git repo
+    local('find . -name \.gitignore -type f -delete')
+    local('echo "devops.tar.*" >> .gitignore')
+    local('echo "fabfile.*" >> .gitignore')
+    local("git add .")
+    local("git commit -am 'add results of build' --no-verify --quiet")
+
 
 @task
 def tar_from_git(branch):
@@ -273,20 +293,18 @@ def link_new_code():
 
 
 @task
-def yarn_install(installPath):
-    pathToInstall = '/data/deploy/pending/' + installPath
-    try:
-        with cd(pathToInstall):
-            sudo('yarn --no-progress --non-interactive install')
-    except FabricException:
-        pass
-
-
-@task
 def pip_install():
     with cd('/data/deploy/pending'):
         sudo('pip install -r requirements.txt')
 
+@task
+def yarn_install(installPath):
+
+    try:
+        with cd("/data/deploy/pending/%s" % installPath):
+            sudo('yarn --no-progress --non-interactive install')
+    except FabricException:
+        pass
 
 @task
 def download_nltk_data():
@@ -302,43 +320,6 @@ def collect_static():
         sudo('chmod 777 static')
         sudo('python manage.py collectstatic --noinput')
 
-
-@task
-def setup_web_symlinks(installPath):
-    pathToInstallFrom = '/data/deploy/pending/' + installPath
-    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
-    sudo('if [[ -d %s/images ]]; then ln -s %s/images %s/images ; else echo "images not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-
-@task
-def setup_server_symlinks(installPath):
-    pathToInstallFrom = '/data/deploy/pending/' + installPath
-    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
-    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "public/metaswitch not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else echo "public/nec not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "public/login.html not available";  fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-
-@task
-def run_npm_dist(installPath):
-    pathToInstall = '/data/deploy/pending/' + installPath
-    try:
-        with cd(pathToInstall):
-            sudo('npm run dist')
-    except FabricException:
-        pass
 
 
 @task
@@ -368,77 +349,62 @@ def codeversioner():
         sudo(cmd)
 
 
+# This assumes the local repo is ready (any build has been done and commited), then creates the tarball, finally deploys one at a time 
 @task
-def setupDeploy(branch):
+def deploycode(branch, nltkLoad="False", doCollectStatic="True"):
     tar_from_git(branch)
     remote_inflate_code()
 
-
-@task
-def deployServerCode(branch, yarn="False", installPath=None):
-    tar_from_git(branch)
-    remote_inflate_code()
-
-    if yarn in TRUTH_VALUES:
-        yarn_install(installPath)
-    else:
-        pip_install()
-
-    run_npm_dist(installPath)
-
-
-@task
-def deploycode(branch, nltkLoad="False", doCollectStatic="True", yarn="False", installPath=None):
-    tar_from_git(branch)
-    remote_inflate_code()
-
-    if yarn in TRUTH_VALUES:
-        yarn_install(installPath)
-    else:
+    if not yarn in TRUTH_VALUES:
         pip_install()
 
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
+ # Either do a django collectstatic, or at least collect django admin static assets (except for yarn deploys)
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
-        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
-             '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+        if not yarn in TRUTH_VALUES:
+            sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
+                 '/django/contrib/admin/static/admin /data/deploy/pending/static/')
 
 
+# This deploy assumes the tar ball ha been created (and any build steps done prior), then deploys all targets in parallel
 @task
 @parallel
-
-def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", installPath=None):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
     remote_inflate_code()
-    if yarn in TRUTH_VALUES:
-        yarn_install(installPath)
 
-    else:
+    if not yarn in TRUTH_VALUES:
         pip_install()
 
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
+# Either do a django collectstatic, or at least collect django admin static assets (except for yarn deploys)
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
-        sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
-             '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+        if not yarn in TRUTH_VALUES:
+            sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
+                 '/django/contrib/admin/static/admin /data/deploy/pending/static/')
 
 
 @task
 def dbmigrate_node(installPath):
     pathToUse = '/data/deploy/pending/' + installPath + "/dist"
+    pathToInstallFrom = '/data/deploy/pending/' + installPath
+    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
     with cd(pathToUse):
+        sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
+             (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+        sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
+            (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
         run('npm run migrate')
-
-
-@task
-def dbmigrate_docker(containerid, codepath='/data/deploy/current'):
-    run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
-
+    # todo: remove temporary symlinks
 
 @task
 @parallel
@@ -450,14 +416,55 @@ def dbmigrate(migrateOptions=None):
 
     run(cmdToRun)
 
-
-supervisor = "/usr/bin/supervisorctl"
+# todo: deprecate this task
+@task
+def dbmigrate_docker(containerid, codepath='/data/deploy/current'):
+    run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
 
 
 #
 # These atomic tasks for putting the new deploy into effect are preferred, as they
 # may run in parallel, while minimizing the exposure between the swap_code and putting the new code into effect
 #
+supervisor = "/usr/bin/supervisorctl"
+
+
+@task
+def swap_code():
+    try:
+        sudo('unlink /data/deploy/current')
+    except:
+        pass
+
+    sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
+
+
+@task
+def setup_web_symlinks(installPath):
+    pathToInstallFrom = '/data/deploy/current/' + installPath
+    pathToInstallTo = '/data/deploy/current/' + installPath + "/dist"
+    sudo('if [[ -d %s/images ]]; then ln -s %s/images %s/images ; else echo "images not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+
+@task
+def setup_server_symlinks(installPath):
+    pathToInstallFrom = '/data/deploy/current/' + installPath
+    pathToInstallTo = '/data/deploy/current/' + installPath + "/dist"
+    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+    sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "public/metaswitch not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else echo "public/nec not available"; fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
+
+    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "public/login.html not available";  fi' %
+         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
 
 @task
@@ -469,13 +476,6 @@ def reload_web(doCollectStatic=None):
 
     reload_nginx()
     reload_uwsgi()
-
-
-@task
-@parallel
-def reload_node(processName):
-    swap_code()
-    sudo("%s restart %s" % (supervisor, processName))
 
 
 @task
@@ -520,12 +520,17 @@ def restart_worker(async="djangorq", doCollectStatic=None):
 
 
 @task
-def swap_code():
-    try:
-        sudo('unlink /data/deploy/current')
-    except:
-        pass
-    sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
+@parallel
+def reload_node(processName,webPath=None,serverPath=None):
+    swap_code()
+
+    if webPath:
+        setup_web_symlinks(webPath)
+
+    if serverPath:
+        setup_server_symlinks(serverPath)
+
+    sudo("%s restart %s" % (supervisor, processName))
 
 
 @task
