@@ -397,6 +397,8 @@ def dbmigrate_node(installPath):
     pathToInstallFrom = '/data/deploy/pending/' + installPath
     pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
     with cd(pathToUse):
+
+        # temporary symlinks, just for the migrate
         sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
              (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
@@ -404,7 +406,14 @@ def dbmigrate_node(installPath):
             (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
         run('npm run migrate')
-    # todo: remove temporary symlinks
+
+        # remove temporary symlinks
+        sudo('if [[ -d %s/node_modules ]]; then rm %s/node_modules ; fi' %
+             (pathToInstallTo, pathToInstallTo))
+
+        sudo('if [[ -d %s/config ]]; then rm %s/config ; fi' %
+            (pathToInstallTo, pathToInstallTo))
+    
 
 @task
 @parallel
