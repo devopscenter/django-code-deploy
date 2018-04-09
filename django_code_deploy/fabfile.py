@@ -249,18 +249,39 @@ def build(branch, installPath):
         local('npm run dist')
 
     # make sure the new files are part of the local git repo
-    local('find . -name \.gitignore -type f -delete')
-    local('echo "devops.tar.*" >> .gitignore')
+    local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
+    local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
     local('echo "fabfile.*" >> .gitignore')
     local("git add .")
     local("git commit -am 'add results of build' --no-verify --quiet")
 
 
+
+
+# Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
+# uwsgi, djangorq, and and celery can make use of it (e.g. to pass to
+# Sentry for releases)
+
+@task
+def set_git_sha():
+    local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini', shell="/bin/bash")
+    local('git add .')
+
+
 @task
 def tar_from_git(branch):
+    local("pwd")
+    local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
+    local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
+    local('echo "fabfile.*" >> .gitignore')
     local('rm -rf %s.tar.gz' % TAR_NAME)
     local('git archive %s --format=tar.gz --output=%s.tar.gz' %
           (branch, TAR_NAME))
+
+@task
+def clean_up():
+    local('git reset --hard ${GIT_COMMIT}')
+    local('git clean -fdq')
 
 
 @task
@@ -613,12 +634,3 @@ def sudo_app(cmdToRun):
     with cd('/data/deploy/pending'):
         sudo(cmdToRun)
 
-
-# Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
-# uwsgi, djangorq, and and celery can make use of it (e.g. to pass to
-# Sentry for releases)
-
-@task
-def set_git_sha():
-    local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini', shell="/bin/bash")
-    local('git add .')
