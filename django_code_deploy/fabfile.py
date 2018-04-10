@@ -25,10 +25,20 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 from fabric.api import *
+
 from time import gmtime, strftime
 import os
 import sys
 from git import Repo
+
+
+# Use bash for fabric local commands, per http://www.booneputney.com/development/fabric-run-local-bash-shell/
+from fabric.api import local as local_cmd  # import local with alternate name
+
+# create new local command, with the shell set to /bin/bash
+def local(command_string):
+    local_cmd(command_string, shell="/bin/bash")
+
 
 
 class FabricException(Exception):
@@ -238,7 +248,7 @@ TAR_NAME = "devops"
 # These are tasks for building on jenkins (or other build box)
 # Initally support a yarn-based workflow for node
 @task
-def build(branch, installPath):
+def build(branch, installPath, node=False):
     
     # ensure yarn installs all build tools
     with lcd(installPath):
@@ -247,6 +257,11 @@ def build(branch, installPath):
 
         # do the build
         local('npm run dist')
+
+        if node in TRUTH_VALUES:
+            local('if [[ -d "config" ]]; then echo "<collecting config>" ; rsync -ra --stats config/ dist/config; fi;')
+            local('if [[ -d "src/public" ]]; then echo "<collecting public>" ; rsync -ra --stats src/public/ dist/public; fi;')
+            local('if [[ -d "node_modules" ]]; then echo "<collecting node_modules>" ; rsync -ra --stats node_modules/ dist/node_modules; fi;')
 
     # make sure the new files are part of the local git repo
     local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
@@ -414,26 +429,13 @@ def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
 
 @task
 def dbmigrate_node(installPath):
+
     pathToUse = '/data/deploy/pending/' + installPath + "/dist"
-    pathToInstallFrom = '/data/deploy/pending/' + installPath
-    pathToInstallTo = '/data/deploy/pending/' + installPath + "/dist"
+
     with cd(pathToUse):
-
-        # temporary symlinks, just for the migrate
-        sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
-             (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-        sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
-            (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
+        run('pwd')
         run('npm run migrate')
 
-        # remove temporary symlinks
-        sudo('if [[ -d %s/node_modules ]]; then rm %s/node_modules ; fi' %
-             (pathToInstallTo, pathToInstallTo))
-
-        sudo('if [[ -d %s/config ]]; then rm %s/config ; fi' %
-            (pathToInstallTo, pathToInstallTo))
     
 
 @task
@@ -467,34 +469,6 @@ def swap_code():
         pass
 
     sudo("ln -s $(readlink /data/deploy/pending) /data/deploy/current")
-
-
-@task
-def setup_web_symlinks(installPath):
-    pathToInstallFrom = '/data/deploy/current/' + installPath
-    pathToInstallTo = '/data/deploy/current/' + installPath + "/dist"
-    sudo('if [[ -d %s/images ]]; then ln -s %s/images %s/images ; else echo "images not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-
-@task
-def setup_server_symlinks(installPath):
-    pathToInstallFrom = '/data/deploy/current/' + installPath
-    pathToInstallTo = '/data/deploy/current/' + installPath + "/dist"
-    sudo('if [[ -d %s/node_modules ]]; then ln -s %s/node_modules %s/node_modules ; else echo "node_modules not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/config ]]; then ln -nfs %s/config %s/config ; else  echo "config/ not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/public/metaswitch ]]; then ln -s %s/public/metaswitch %s/metaswitch ; else echo "public/metaswitch not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -d %s/public/nec ]]; then ln -s %s/public/nec %s/nec ; else echo "public/nec not available"; fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
-
-    sudo('if [[ -f %s/public/login.html ]]; then ln -s %s/public/login.html %s/login.html ; else echo "public/login.html not available";  fi' %
-         (pathToInstallFrom, pathToInstallFrom, pathToInstallTo))
 
 
 @task
@@ -551,14 +525,8 @@ def restart_worker(async="djangorq", doCollectStatic=None):
 
 @task
 @parallel
-def reload_node(processName,webPath=None,serverPath=None):
+def reload_node(processName):
     swap_code()
-
-    if webPath:
-        setup_web_symlinks(webPath)
-
-    if serverPath:
-        setup_server_symlinks(serverPath)
 
     sudo("%s restart %s" % (supervisor, processName))
 
