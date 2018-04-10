@@ -261,8 +261,7 @@ def build(branch, installPath, node=False):
         if node in TRUTH_VALUES:
             local('if [[ -d "config" ]]; then echo "<collecting config>" ; rsync -ra --stats config/ dist/config; fi;')
             local('if [[ -d "src/public" ]]; then echo "<collecting public>" ; rsync -ra --stats src/public/ dist/public; fi;')
-            local('if [[ -d "node_modules" ]]; then echo "<collecting node_modules>" ; rsync -ra --stats node_modules/ dist/node_modules; fi;')
-
+ 
     # make sure the new files are part of the local git repo
     local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
     local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
