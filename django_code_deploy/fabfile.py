@@ -283,14 +283,18 @@ def set_git_sha():
 
 
 @task
-def tar_from_git(branch):
+def tar_from_git(branch,dirs=None):
     local("pwd")
-    local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
-    local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
-    local('echo "fabfile.*" >> .gitignore')
-    local('rm -rf %s.tar.gz' % TAR_NAME)
-    local('git archive %s --format=tar.gz --output=%s.tar.gz' %
-          (branch, TAR_NAME))
+    if dirs:
+        local('tar -czf %s.tar.gz %s' % (TAR_NAME, dirs))
+
+    else:
+        local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
+        local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
+        local('echo "fabfile.*" >> .gitignore')
+        local('rm -rf %s.tar.gz' % TAR_NAME)
+        local('git archive %s --format=tar.gz --output=%s.tar.gz' %
+              (branch, TAR_NAME))
 
 @task
 def clean_up():
