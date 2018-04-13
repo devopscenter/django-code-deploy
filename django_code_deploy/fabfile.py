@@ -318,6 +318,7 @@ def link_new_code():
     except:
         pass
     sudo('ln -s %s /data/deploy/pending' % UPLOAD_CODE_PATH)
+
     with cd('/data/deploy'):
         # keep onlly 5 most recent deploys, excluding any symlinks or other purely alpha directories. The steps are
         #  1. generate list of directories, sorted by modification time.
@@ -390,7 +391,7 @@ def codeversioner():
 
 # This assumes the local repo is ready (any build has been done and commited), then creates the tarball, finally deploys one at a time 
 @task
-def deploycode(branch, nltkLoad="False", doCollectStatic="True"):
+def deploycode(branch, nltkLoad="False", doCollectStatic="True", immutable="True"):
     tar_from_git(branch)
     remote_inflate_code()
 
@@ -408,11 +409,16 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True"):
             sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
                  '/django/contrib/admin/static/admin /data/deploy/pending/static/')
 
+    if not immutable in TRUTH_VALUES:
+        with cd('/data/deploy/pending'):
+            sudo('sudo chown -R ubuntu:ubuntu *')
+
+
 
 # This deploy assumes the tar ball ha been created (and any build steps done prior), then deploys all targets in parallel
 @task
 @parallel
-def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False",immutable="True"):
     remote_inflate_code()
 
     if not yarn in TRUTH_VALUES:
@@ -428,6 +434,10 @@ def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False"):
         if not yarn in TRUTH_VALUES:
             sudo('cp -r ' + '/usr/local/opt/python/lib/python2.7/site-packages' +
                  '/django/contrib/admin/static/admin /data/deploy/pending/static/')
+
+    if not immutable in TRUTH_VALUES:
+        with cd('/data/deploy/pending'):
+            sudo('sudo chown -R ubuntu:ubuntu *')
 
 
 @task
