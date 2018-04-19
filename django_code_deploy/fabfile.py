@@ -265,7 +265,7 @@ def build(branch, installPath, node=False, angularBuild=False):
         # do the build
         if angularBuild:
             local(
-                'npm run genversion && ng --prod --env=%s && cp -r public/* dist/' % environment)
+                'npm run genversion && ./node_modules/.bin/ng --prod --env=%s && cp -r public/* dist/' % environment)
         else:
             local('npm run dist')
 
