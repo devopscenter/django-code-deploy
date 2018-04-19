@@ -32,13 +32,15 @@ import sys
 from git import Repo
 
 
-# Use bash for fabric local commands, per http://www.booneputney.com/development/fabric-run-local-bash-shell/
+# Use bash for fabric local commands, per
+# http://www.booneputney.com/development/fabric-run-local-bash-shell/
 from fabric.api import local as local_cmd  # import local with alternate name
 
 # create new local command, with the shell set to /bin/bash
+
+
 def local(command_string):
     local_cmd(command_string, shell="/bin/bash")
-
 
 
 class FabricException(Exception):
@@ -247,29 +249,37 @@ TAR_NAME = "devops"
 
 # These are tasks for building on jenkins (or other build box)
 # Initally support a yarn-based workflow for node
+
+
 @task
-def build(branch, installPath, node=False):
-    
+def build(branch, installPath, node=False, angularBuild=False):
+
+    # grab the environemnt
+    environment = os.environ["AWS_ENVIRONMENT"]
+
     # ensure yarn installs all build tools
     with lcd(installPath):
         local("pwd")
         local('yarn --production=false --no-progress --non-interactive install')
 
         # do the build
-        local('npm run dist')
+        if angularBuild:
+            local('ng --prod --env=%s && cp -r public/* dist/' % environment)
+        else:
+            local('npm run dist')
 
         if node in TRUTH_VALUES:
-            local('if [[ -d "config" ]]; then echo "<collecting config>" ; rsync -ra --stats config/ dist/config; fi;')
-            local('if [[ -d "src/public" ]]; then echo "<collecting public>" ; rsync -ra --stats src/public/ dist/public; fi;')
- 
+            local(
+                'if [[ -d "config" ]]; then echo "<collecting config>" ; rsync -ra --stats config/ dist/config; fi;')
+            local(
+                'if [[ -d "src/public" ]]; then echo "<collecting public>" ; rsync -ra --stats src/public/ dist/public; fi;')
+
     # make sure the new files are part of the local git repo
     local('find . -path ./\.git -prune -o -name \.gitignore -type f -exec rm -f {} \;')
     local('echo "%s.tar.*" >> .gitignore' % TAR_NAME)
     local('echo "fabfile.*" >> .gitignore')
     local("git add .")
     local("git commit -am 'add results of build' --no-verify --quiet")
-
-
 
 
 # Obtain git_sha from Jenkins git plugin, make sure it's passed along with the code so that
@@ -283,7 +293,7 @@ def set_git_sha():
 
 
 @task
-def tar_from_git(branch,dirs=None):
+def tar_from_git(branch, dirs=None):
     local("pwd")
     if dirs:
         local('tar -czf %s.tar.gz %s' % (TAR_NAME, dirs))
@@ -295,6 +305,7 @@ def tar_from_git(branch,dirs=None):
         local('rm -rf %s.tar.gz' % TAR_NAME)
         local('git archive %s --format=tar.gz --output=%s.tar.gz' %
               (branch, TAR_NAME))
+
 
 @task
 def clean_up():
@@ -337,6 +348,7 @@ def pip_install():
     with cd('/data/deploy/pending'):
         sudo('pip install -r requirements.txt')
 
+
 @task
 def yarn_install(installPath):
 
@@ -345,6 +357,7 @@ def yarn_install(installPath):
             sudo('yarn --no-progress --non-interactive install')
     except FabricException:
         pass
+
 
 @task
 def download_nltk_data():
@@ -359,7 +372,6 @@ def collect_static():
         sudo('if [[ ! -d static ]]; then mkdir static/ ;fi')
         sudo('chmod 777 static')
         sudo('python manage.py collectstatic --noinput')
-
 
 
 @task
@@ -389,7 +401,8 @@ def codeversioner():
         sudo(cmd)
 
 
-# This assumes the local repo is ready (any build has been done and commited), then creates the tarball, finally deploys one at a time 
+# This assumes the local repo is ready (any build has been done and
+# commited), then creates the tarball, finally deploys one at a time
 @task
 def deploycode(branch, nltkLoad="False", doCollectStatic="True", immutable="True"):
     tar_from_git(branch)
@@ -401,7 +414,8 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", immutable="True
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
- # Either do a django collectstatic, or at least collect django admin static assets (except for yarn deploys)
+ # Either do a django collectstatic, or at least collect django admin
+ # static assets (except for yarn deploys)
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
@@ -414,11 +428,11 @@ def deploycode(branch, nltkLoad="False", doCollectStatic="True", immutable="True
             sudo('sudo chown -R ubuntu:ubuntu *')
 
 
-
-# This deploy assumes the tar ball ha been created (and any build steps done prior), then deploys all targets in parallel
+# This deploy assumes the tar ball ha been created (and any build steps
+# done prior), then deploys all targets in parallel
 @task
 @parallel
-def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False",immutable="True"):
+def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False", immutable="True"):
     remote_inflate_code()
 
     if not yarn in TRUTH_VALUES:
@@ -427,7 +441,8 @@ def deployParallel(nltkLoad="False", doCollectStatic="True", yarn="False",immuta
     if nltkLoad in TRUTH_VALUES:
         download_nltk_data()
 
-# Either do a django collectstatic, or at least collect django admin static assets (except for yarn deploys)
+# Either do a django collectstatic, or at least collect django admin
+# static assets (except for yarn deploys)
     if doCollectStatic in TRUTH_VALUES:
         collect_static()
     else:
@@ -449,7 +464,6 @@ def dbmigrate_node(installPath):
         run('pwd')
         run('npm run migrate')
 
-    
 
 @task
 @parallel
@@ -462,6 +476,8 @@ def dbmigrate(migrateOptions=None):
     run(cmdToRun)
 
 # todo: deprecate this task
+
+
 @task
 def dbmigrate_docker(containerid, codepath='/data/deploy/current'):
     run('docker exec -it %s /bin/bash -c "cd /data/deploy/current && python manage.py migrate --noinput --ignore-ghost-migrations"' % containerid)
@@ -614,4 +630,3 @@ def run_app(cmdToRun, stopOnError="True"):
 def sudo_app(cmdToRun):
     with cd('/data/deploy/pending'):
         sudo(cmdToRun)
-
