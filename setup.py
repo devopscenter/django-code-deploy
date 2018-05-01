@@ -3,7 +3,7 @@ setup(
     name='django-code-deploy',
     packages=['django_code_deploy'],  # this must be the same as the name above
 
-    version='0.9.175',
+    version='0.9.180',
 
     description='Deploys Django code to AWS based on tags',
     author='Josh devops.center, Bob devops.center, Gregg devops.center',

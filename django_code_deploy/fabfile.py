@@ -53,7 +53,6 @@ env.key_filename = []
 ACCESS_KEY_PATH = "~/.ssh/"
 env.connection_attempts = 3
 
-
 TRUTH_VALUES = ['True', 'TRUE', '1', 'true', 't', 'Yes',
                 'YES', 'yes', 'y']  # arguments in fab are always strings
 
@@ -67,6 +66,15 @@ import distutils.sysconfig
 import collections
 AWSAddress = collections.namedtuple(
     'AWSAddress', 'name publicdns privateip shard')
+
+
+IP_MODE=os.getenv('dcCodeDeployIPMode', 'public')
+
+@task
+def set_ip_mode(mode):
+    global IP_MODE
+    if mode in ['public', 'private']:
+        IP_MODE = mode
 
 
 # set_hosts selects all instances that match the filter criteria.
@@ -86,7 +94,7 @@ def set_hosts(type, primary=None, appname=None, action=None, region=None,
     awsaddresses = _get_awsaddress(type, primary, environment, appname,
                                    action, region, shard, aRole)
 
-    env.hosts = list(item.publicdns for item in awsaddresses)
+    env.hosts = list(item.publicdns if IP_MODE == 'public' else item.privateip for item in awsaddresses)
     env.host_names = list(item.name for item in awsaddresses)
 
     _log_hosts(awsaddresses)
@@ -107,7 +115,7 @@ def set_one_host(type, primary=None, appname=None, action=None, region=None,
 
     awsaddresses = [awsaddresses[0]]
 
-    env.hosts = [awsaddresses[0].publicdns]
+    env.hosts = [awsaddresses[0].publicdns if IP_MODE == 'public' else awsaddresses[0].privateip]
     env.host_names = [awsaddresses[0].name]
 
     _log_hosts(awsaddresses)
@@ -129,7 +137,7 @@ def set_one_host_per_shard(type, primary=None, appname=None, action=None,
         if not next((True for bhost in pruned_list if ahost.shard == bhost.shard), False):
             pruned_list.append(ahost)
 
-    env.hosts = list(item.publicdns for item in pruned_list)
+    env.hosts = list(item.publicdns if IP_MODE == 'public' else item.privateip for item in pruned_list)
     env.host_names = list(item.name for item in pruned_list)
 
     _log_hosts(pruned_list)
@@ -147,6 +155,7 @@ def _log_hosts(awsaddresses):
     logger.info("")
     logger.info("")
     logger.info("keys: %s", env.key_filename)
+    logger.info("hosts: %s", env.hosts)
     logger.info("")
 
 
