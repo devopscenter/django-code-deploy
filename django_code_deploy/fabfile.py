@@ -91,6 +91,7 @@ def set_hosts(type, primary=None, appname=None, action=None, region=None,
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
+
     awsaddresses = _get_awsaddress(type, primary, environment, appname,
                                    action, region, shard, aRole)
 
@@ -110,6 +111,7 @@ def set_one_host(type, primary=None, appname=None, action=None, region=None,
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
+ 
     awsaddresses = _get_awsaddress(type, primary, environment, appname,
                                    action, region, shard, aRole)
 
@@ -129,6 +131,7 @@ def set_one_host_per_shard(type, primary=None, appname=None, action=None,
     if region is None:
         local('echo "ERROR: region option is not set"')
     environment = os.environ["AWS_ENVIRONMENT"]
+
     awsaddresses = _get_awsaddress(type, primary, environment, appname,
                                    action, region, shard, aRole)
 
@@ -206,10 +209,10 @@ def show_environment():
 # and value pair
 
 
-def _get_awsaddress(type, primary, environment, appname, action, region, shard,
+def _get_awsaddress(type, primary, environment, appname, action, region_in, shard,
                     aRole):
     awsaddresses = []
-    connection = _create_connection(region)
+
     aws_tags = {"tag:Type": type, "tag:Env": environment,
                 "tag:App": appname, "instance-state-name": "running"}
     if action:
@@ -219,18 +222,27 @@ def _get_awsaddress(type, primary, environment, appname, action, region, shard,
     if aRole:
         aws_tags["tag:role"] = aRole
     logger.info("Filtering via tags=%s", aws_tags)
-    instances = connection.get_only_instances(filters=aws_tags)
+
     shards = [e for e in shard.split(' ')]
-    for instance in instances:
-        if instance.public_dns_name:                                # make sure there's really an instance here
-            shardt = (
-                "None" if not 'Shard' in instance.tags else instance.tags['Shard'])
-            awsaddress = AWSAddress(name=instance.tags['Name'], publicdns=instance.public_dns_name,
-                                    privateip=instance.private_ip_address, shard=shardt)
-            if (shard == 'all') or (shardt in shards):
-                awsaddresses.append(awsaddress)
-                if instance.key_name not in env.key_filename:
-                    env.key_filename.append(instance.key_name)
+    regions = [e for e in region_in.split(' ')]
+
+    for region in regions:
+        connection = _create_connection(region)
+        instances = connection.get_only_instances(filters=aws_tags)
+
+        for instance in instances:
+            if instance.private_ip_address:                                # make sure there's really an instance here
+                shardt = (
+                    "None" if not 'Shard' in instance.tags else instance.tags['Shard'])
+                awsaddress = AWSAddress(name=instance.tags['Name'], publicdns=instance.public_dns_name,
+                                       privateip=instance.private_ip_address, shard=shardt)
+                if (shard == 'all') or (shardt in shards):
+                    awsaddresses.append(awsaddress)
+                    if instance.key_name not in env.key_filename:
+                        env.key_filename.append(instance.key_name)
+ 
+        connection.close()
+
     # convert any AWS key-pair names to a file path for the actual key pair
     # locally
     env.key_filename = [key if os.path.isfile(
