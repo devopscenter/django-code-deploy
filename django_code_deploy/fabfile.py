@@ -312,7 +312,7 @@ def build(branch, installPath, node=False, angularBuild=False):
 
 @task
 def set_git_sha():
-    local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini', shell="/bin/bash")
+    local('echo "GIT_SHA=${GIT_COMMIT}" >> dynamic_env.ini')
     local('git add .')
 
 
