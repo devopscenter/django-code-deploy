@@ -67,7 +67,14 @@ import collections
 AWSAddress = collections.namedtuple(
     'AWSAddress', 'name publicdns privateip shard')
 
-
+#
+# Look for this setting from the calling environment. 
+# E.g. for Jenkins. Note that in any Jenkins job, environment variables can come from one of three places:
+#     globally (from manage Jenkins, global properties)
+#     per job, via either a bash export at the beginning of the job or the environment injector plugin,
+#     per fab invocation, via the follow set_ip_mode fab task.
+# If this doesn't make any sense, well ....
+#
 IP_MODE=os.getenv('dcCodeDeployIPMode', 'public')
 
 @task
