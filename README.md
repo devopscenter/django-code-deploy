@@ -73,4 +73,4 @@ codeversioner()
 * The code is deployed in directories organized like this, one per deploy: /data/deploy/*today's date* ... the newest deploy will be symlinked to /data/deploy/current/
 * As is the nature of fab, the instances are processed one at a time. No attempt has been made to do the actual deploys in parallel.
 
-* (c) 2015 - 2016, devops.center.
+* (c) 2015 - 2018, devops.center llc.
